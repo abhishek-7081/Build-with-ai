@@ -4,15 +4,19 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { v2 as cloudinary } from "cloudinary";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
+
+import { connectDatabase, queryComplaints, calculatePriorityScore, getPriorityLevel } from "./db.js";
 import { analyzeDescription } from "./nlpProcessor.js";
 import { findDuplicateComplaint } from "./duplicateDetector.js";
-import {
-  getComplaints,
-  getComplaintReports,
-  insertComplaint,
-  mergeDuplicateReport,
-  updateComplaintStatus
-} from "./db.js";
+import { User } from "./models/User.js";
+import { Complaint } from "./models/Complaint.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,16 +28,33 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Set up upload directory
+// Establish connection to MongoDB
+connectDatabase();
+
+// Configure Cloudinary if credentials are provided in .env
+let useCloudinary = false;
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  useCloudinary = true;
+  console.log("Cloudinary cloud storage initialized.");
+} else {
+  console.log("Cloudinary credentials missing in .env. Falling back to local storage in /uploads");
+}
+
+// Set up local uploads directories (for fallback & temp storage)
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// Serve uploaded/static files
+// Serve uploaded/static files locally (fallback)
 app.use("/uploads", express.static(UPLOAD_DIR));
 
-// Create mock seed SVG files if they don't exist
+// Create mock seed SVG files in /uploads if they don't exist
 const SEED_IMAGES = {
   "seed_sewage_1.jpg": `<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
     <rect width="100%" height="100%" fill="#1a1c23"/>
@@ -95,7 +116,7 @@ Object.entries(SEED_IMAGES).forEach(([filename, svgContent]) => {
   }
 });
 
-// Configure Multer for file uploads
+// Configure Multer for file uploads (writes to local disk temporarily)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOAD_DIR);
@@ -107,51 +128,219 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// API Endpoints
+// AUTH MIDDLEWARE (Secures citizen portal routes)
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: "Access denied. Authentication required to report issues." });
+  }
 
-// 1. Get all complaints
-app.get("/api/complaints", (req, res) => {
   try {
-    const complaints = getComplaints();
+    const verified = jwt.verify(token, process.env.JWT_SECRET || "delhi_civic_security_secret_token_12345");
+    req.userId = verified.userId;
+    req.userName = verified.name;
+    req.userPhone = verified.phone;
+    next();
+  } catch (err) {
+    res.status(403).json({ error: "Session expired. Please log in again." });
+  }
+}
+
+// OPTIONAL MIDDLEWARE (Parses user identity if token present, but does not block)
+function optionalAuthenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  
+  if (token) {
+    try {
+      const verified = jwt.verify(token, process.env.JWT_SECRET || "delhi_civic_security_secret_token_12345");
+      req.userId = verified.userId;
+      req.userName = verified.name;
+      req.userPhone = verified.phone;
+    } catch (err) {
+      // Ignored for optional auth
+      console.warn("Optional auth token invalid or expired, proceeding as anonymous:", err.message)
+    }
+  }
+  next();
+}
+
+
+// --- API ROUTES ---
+
+// 1. Citizen Authentication Endpoints
+
+// Signup Route
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { name, phone, password } = req.body;
+    if (!name || !phone || !password) {
+      return res.status(400).json({ error: "All fields (name, phone, password) are required." });
+    }
+
+    // Check if phone already registered
+    const existing = await User.findOne({ phone });
+    if (existing) {
+      return res.status(400).json({ error: "This phone number is already registered. Please log in." });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      name,
+      phone,
+      password: hashedPassword
+    });
+
+    const savedUser = await newUser.save();
+
+    // Create JWT Token
+    const token = jwt.sign(
+      { userId: savedUser._id, name: savedUser.name, phone: savedUser.phone },
+      process.env.JWT_SECRET || "delhi_civic_security_secret_token_12345",
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: { id: savedUser._id, name: savedUser.name, phone: savedUser.phone }
+    });
+  } catch (error) {
+    console.error("Signup failed:", error);
+    res.status(500).json({ error: "Registration failed. Try again." });
+  }
+});
+
+// Login Route
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    if (!phone || !password) {
+      return res.status(400).json({ error: "Phone and password are required." });
+    }
+
+    const user = await User.findOne({ phone });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid phone number or password." });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(400).json({ error: "Invalid phone number or password." });
+    }
+
+    // Create JWT Token
+    const token = jwt.sign(
+      { userId: user._id, name: user.name, phone: user.phone },
+      process.env.JWT_SECRET || "delhi_civic_security_secret_token_12345",
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: { id: user._id, name: user.name, phone: user.phone }
+    });
+  } catch (error) {
+    console.error("Login failed:", error);
+    res.status(500).json({ error: "Login failed. Try again." });
+  }
+});
+
+// 2. Complaints API
+
+// Get all complaints (Department Dashboard)
+app.get("/api/complaints", async (req, res) => {
+  try {
+    const complaints = await queryComplaints();
     res.json(complaints);
   } catch (error) {
     res.status(500).json({ error: "Failed to retrieve complaints." });
   }
 });
 
-// 2. Get reports associated with a complaint (history/duplicates)
-app.get("/api/complaints/:id/reports", (req, res) => {
+// Get reports logged for a citizen (Authenticated Profile feed)
+app.get("/api/citizen/my-complaints", authenticateToken, async (req, res) => {
   try {
-    const reports = getComplaintReports(req.params.id);
-    res.json(reports);
+    // Find all complaints where at least one report subdocument matches this user's ID
+    const myIssues = await Complaint.find({
+      "reports.userId": req.userId
+    }).sort({ updatedAt: -1 });
+
+    res.json(myIssues);
   } catch (error) {
-    res.status(500).json({ error: "Failed to retrieve linked reports." });
+    console.error("Failed to query citizen issues:", error);
+    res.status(500).json({ error: "Failed to load your complaints." });
   }
 });
 
-// 3. Create or Merge a Complaint (Citizen Portal Submission)
-app.post("/api/complaints", upload.single("image"), (req, res) => {
+// Get reports associated with a complaint (history/duplicates gallery)
+app.get("/api/complaints/:id/reports", async (req, res) => {
   try {
-    const { description, userName, userPhone, locationOverride } = req.body;
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ error: "Complaint not found" });
+    res.json(complaint.reports);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to retrieve reports." });
+  }
+});
+
+// Create or Merge a Complaint (Citizen Portal Submission - Authenticated)
+app.post("/api/complaints", optionalAuthenticateToken, upload.single("image"), async (req, res) => {
+  try {
+    const { description, locationOverride, latitude, longitude } = req.body;
     
     if (!description || description.trim() === "") {
       return res.status(400).json({ error: "Description is required." });
     }
 
-    const imageFilename = req.file ? req.file.filename : null;
+    // User data from JWT (if logged in, otherwise default to Anonymous)
+    const reporterId = req.userId || null;
+    const reporterName = req.userName || req.body.userName || "Anonymous Citizen";
+    const reporterPhone = req.userPhone || req.body.userPhone || "Not provided";
 
-    // AI/NLP processing
+    // Handle Geolocation Coordinates
+    const latNum = parseFloat(latitude);
+    const lngNum = parseFloat(longitude);
+    const locationCoords = {
+      lat: !isNaN(latNum) ? latNum : 28.6139, // Default to New Delhi center
+      lng: !isNaN(lngNum) ? lngNum : 77.2090
+    };
+
+    // Cloudinary Upload or Disk Storage Fallback
+    let imageUri = null;
+    if (req.file) {
+      if (useCloudinary) {
+        try {
+          const cloudResult = await cloudinary.uploader.upload(req.file.path, {
+            folder: "delhi_civic_navigator"
+          });
+          imageUri = cloudResult.secure_url;
+          fs.unlinkSync(req.file.path); // Delete local temp copy
+        } catch (uploadError) {
+          console.error("Cloudinary upload failed, using local disk fallback:", uploadError);
+          imageUri = req.file.filename; // Fallback
+        }
+      } else {
+        imageUri = req.file.filename; // Fallback local serving
+      }
+    }
+
+    // AI/NLP processing of description
     const nlpData = analyzeDescription(description);
 
-    // If user provided a location manual override, use it instead of AI extraction
+    // Apply manual location landmark override if provided
     if (locationOverride && locationOverride.trim() !== "") {
       nlpData.location = locationOverride.trim();
     }
 
-    // Get active complaints to check for duplicates
-    const activeComplaints = getComplaints();
+    // Fetch active complaints to scan for duplicate issues in same category
+    const activeComplaints = await Complaint.find({ status: { $ne: "Resolved" } });
 
-    // Check for duplicates
+    // Check similarity
     const duplicateMatch = findDuplicateComplaint({
       description,
       category: nlpData.category,
@@ -159,54 +348,116 @@ app.post("/api/complaints", upload.single("image"), (req, res) => {
     }, activeComplaints);
 
     if (duplicateMatch) {
-      // Merge report with existing complaint
-      const matchedComplaint = duplicateMatch.complaint;
-      const mergeResult = mergeDuplicateReport(matchedComplaint.id, {
+      // Merge report with existing MongoDB Complaint
+      const matchedId = duplicateMatch.complaint._id;
+      const complaint = await Complaint.findById(matchedId);
+
+      // Create new nested report subdocument
+      const newReport = {
+        userId: reporterId,
+        userName: reporterName,
+        userPhone: reporterPhone,
         description,
-        image: imageFilename,
-        userName,
-        userPhone
+        image: imageUri,
+        createdAt: new Date()
+      };
+      complaint.reports.push(newReport);
+      complaint.reportCount = complaint.reports.length;
+
+      if (imageUri && !complaint.images.includes(imageUri)) {
+        complaint.images.push(imageUri);
+      }
+
+      // Recalculate dynamic priority (factors in reports count + proximity hotspot boosts)
+      const score = await calculatePriorityScore(
+        complaint.severity,
+        complaint.reportCount,
+        complaint.createdAt,
+        complaint.description,
+        complaint.locationCoords,
+        complaint._id
+      );
+      complaint.priority = score;
+      complaint.priorityLevel = getPriorityLevel(score);
+      complaint.updatedAt = new Date();
+
+      complaint.history.push({
+        status: complaint.status,
+        timestamp: new Date(),
+        note: `Merged duplicate report from citizen (${reporterName}). Total reports: ${complaint.reportCount}. Dynamic priority elevated to ${complaint.priorityLevel}.`
       });
+
+      const savedComplaint = await complaint.save();
+      
+      // If Cloudinary URL was used and we had local fallback filename, resolve full path on response
+      const resolvedImages = savedComplaint.images.map(img => 
+        img.startsWith("http") ? img : `${img}`
+      );
 
       return res.status(200).json({
         success: true,
         isDuplicate: true,
-        message: `We identified this issue is already reported at ${matchedComplaint.location}. We have merged your report with the existing complaint to prioritize it.`,
-        complaint: mergeResult.complaint,
-        report: mergeResult.report
+        message: `We identified this issue is already reported at ${savedComplaint.location}. We have merged your report with the existing complaint to prioritize it.`,
+        complaint: { ...savedComplaint.toObject(), images: resolvedImages, id: savedComplaint._id },
+        report: newReport
       });
     } else {
-      // Create new complaint
-      const newComplaintData = {
+      // Create and save new Complaint document in MongoDB
+      const initialScore = await calculatePriorityScore(
+        nlpData.severity,
+        1,
+        new Date().toISOString(),
+        description,
+        locationCoords,
+        null
+      );
+
+      const newComplaint = new Complaint({
         title: nlpData.title,
         category: nlpData.category,
         department: nlpData.department,
         severity: nlpData.severity,
         location: nlpData.location,
+        locationCoords,
         description,
-        image: imageFilename,
-        userName,
-        userPhone
-      };
+        status: "Pending",
+        priority: initialScore,
+        priorityLevel: getPriorityLevel(initialScore),
+        reportCount: 1,
+        images: imageUri ? [imageUri] : [],
+        history: [
+          { status: "Pending", timestamp: new Date(), note: "System auto-registered complaint." }
+        ],
+        reports: [
+          {
+            userId: reporterId,
+            userName: reporterName,
+            userPhone: reporterPhone,
+            description,
+            image: imageUri,
+            createdAt: new Date()
+          }
+        ]
+      });
 
-      const result = insertComplaint(newComplaintData);
+      const saved = await newComplaint.save();
 
-      return res.status(201).json({
+      res.status(201).json({
         success: true,
         isDuplicate: false,
         message: "Your complaint has been successfully registered and routed to the department.",
-        complaint: result.complaint,
-        report: result.report
+        complaint: { ...saved.toObject(), id: saved._id },
+        report: saved.reports[0]
       });
     }
   } catch (error) {
-    console.error("Error creating/merging complaint:", error);
-    res.status(500).json({ error: "Failed to submit complaint. Please try again." });
+    console.error("Submission processing failed:", error);
+    res.status(500).json({ error: "Failed to process complaint submission." });
   }
 });
 
-// 4. Update complaint status (Department Dashboard Action)
-app.patch("/api/complaints/:id/status", (req, res) => {
+// Update complaint status (Department actions)
+app.patch("/api/complaints/:id/status", async (req, res) => {
   try {
     const { status, note } = req.body;
     
@@ -214,33 +465,44 @@ app.patch("/api/complaints/:id/status", (req, res) => {
       return res.status(400).json({ error: "Invalid status value." });
     }
 
-    const updatedComplaint = updateComplaintStatus(req.params.id, status, note);
-    if (!updatedComplaint) {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
       return res.status(404).json({ error: "Complaint not found." });
     }
+
+    complaint.status = status;
+    complaint.updatedAt = new Date();
+    complaint.history.push({
+      status,
+      timestamp: new Date(),
+      note: note || `Status updated to ${status}.`
+    });
+
+    // Save status change
+    const saved = await complaint.save();
 
     res.json({
       success: true,
       message: `Complaint status updated to ${status}.`,
-      complaint: updatedComplaint
+      complaint: { ...saved.toObject(), id: saved._id }
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to update complaint status." });
+    res.status(500).json({ error: "Failed to update status." });
   }
 });
 
-// 5. Endpoint to run direct NLP analysis on-the-fly (useful for interactive UI feedback!)
+// AI analysis test router (interactive typing previews)
 app.post("/api/analyze-test", (req, res) => {
   try {
     const { description } = req.body;
     const analysis = analyzeDescription(description);
     res.json(analysis);
   } catch (error) {
-    res.status(500).json({ error: "Failed to analyze description." });
+    res.status(500).json({ error: "Failed to run analysis." });
   }
 });
 
-// Start listening
+// Start API Server
 app.listen(PORT, () => {
   console.log(`Delhi Civic Service Navigator Backend listening on port ${PORT}`);
 });

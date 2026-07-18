@@ -1,0 +1,502 @@
+[
+  {
+    "problem": "Large pothole on Outer Ring Road causing traffic congestion and accidents.",
+    "category": "Roads",
+    "image": "road_pothole_001.jpg"
+  },
+  {
+    "problem": "Broken road surface near the residential colony entrance creating safety hazards.",
+    "category": "Roads",
+    "image": "road_damage_002.jpg"
+  },
+  {
+    "problem": "Road cave-in after recent rainfall blocking one traffic lane.",
+    "category": "Roads",
+    "image": "road_cavein_003.jpg"
+  },
+  {
+    "problem": "Uneven speed breaker without warning signs causing vehicle damage.",
+    "category": "Roads",
+    "image": "speedbreaker_004.jpg"
+  },
+  {
+    "problem": "Damaged divider barriers on a busy road creating accident risks.",
+    "category": "Roads",
+    "image": "divider_damage_005.jpg"
+  },
+  {
+    "problem": "Street light not working at a major road intersection.",
+    "category": "Street Lights",
+    "image": "streetlight_006.jpg"
+  },
+  {
+    "problem": "Entire lane remains dark due to multiple faulty street lights.",
+    "category": "Street Lights",
+    "image": "streetlight_007.jpg"
+  },
+  {
+    "problem": "Street light pole tilted dangerously after vehicle collision.",
+    "category": "Street Lights",
+    "image": "streetlight_008.jpg"
+  },
+  {
+    "problem": "Blinking street light causing visibility issues during night.",
+    "category": "Street Lights",
+    "image": "streetlight_009.jpg"
+  },
+  {
+    "problem": "Street light missing near pedestrian crossing.",
+    "category": "Street Lights",
+    "image": "streetlight_010.jpg"
+  },
+  {
+    "problem": "Overflowing garbage bin attracting stray animals.",
+    "category": "Garbage Collection",
+    "image": "garbage_011.jpg"
+  },
+  {
+    "problem": "Garbage not collected for over a week in residential area.",
+    "category": "Garbage Collection",
+    "image": "garbage_012.jpg"
+  },
+  {
+    "problem": "Illegal dumping of construction waste on roadside.",
+    "category": "Garbage Collection",
+    "image": "garbage_013.jpg"
+  },
+  {
+    "problem": "Waste scattered across public park after missed collection.",
+    "category": "Garbage Collection",
+    "image": "garbage_014.jpg"
+  },
+  {
+    "problem": "Overflowing community dustbin causing foul smell.",
+    "category": "Garbage Collection",
+    "image": "garbage_015.jpg"
+  },
+  {
+    "problem": "Water pipeline leakage wasting clean drinking water.",
+    "category": "Water Supply",
+    "image": "water_016.jpg"
+  },
+  {
+    "problem": "No water supply in residential block since morning.",
+    "category": "Water Supply",
+    "image": "water_017.jpg"
+  },
+  {
+    "problem": "Contaminated drinking water with muddy appearance.",
+    "category": "Water Supply",
+    "image": "water_018.jpg"
+  },
+  {
+    "problem": "Low water pressure affecting multiple households.",
+    "category": "Water Supply",
+    "image": "water_019.jpg"
+  },
+  {
+    "problem": "Broken public water tap continuously leaking.",
+    "category": "Water Supply",
+    "image": "water_020.jpg"
+  },
+  {
+    "problem": "Open sewer overflowing onto the main road.",
+    "category": "Sewerage",
+    "image": "sewer_021.jpg"
+  },
+  {
+    "problem": "Blocked sewer line causing wastewater overflow.",
+    "category": "Sewerage",
+    "image": "sewer_022.jpg"
+  },
+  {
+    "problem": "Manhole cover broken creating danger for pedestrians.",
+    "category": "Sewerage",
+    "image": "sewer_023.jpg"
+  },
+  {
+    "problem": "Sewage smell spreading throughout residential locality.",
+    "category": "Sewerage",
+    "image": "sewer_024.jpg"
+  },
+  {
+    "problem": "Open manhole without barricades on busy road.",
+    "category": "Sewerage",
+    "image": "sewer_025.jpg"
+  },
+  {
+    "problem": "Rainwater accumulated due to clogged drainage system.",
+    "category": "Drainage",
+    "image": "drainage_026.jpg"
+  },
+  {
+    "problem": "Drain blocked with plastic waste causing waterlogging.",
+    "category": "Drainage",
+    "image": "drainage_027.jpg"
+  },
+  {
+    "problem": "Damaged drain cover posing accident risk.",
+    "category": "Drainage",
+    "image": "drainage_028.jpg"
+  },
+  {
+    "problem": "Overflowing roadside drain during light rainfall.",
+    "category": "Drainage",
+    "image": "drainage_029.jpg"
+  },
+  {
+    "problem": "Drain filled with silt reducing water flow.",
+    "category": "Drainage",
+    "image": "drainage_030.jpg"
+  },
+  {
+    "problem": "Public park swings broken and unsafe for children.",
+    "category": "Parks",
+    "image": "park_031.jpg"
+  },
+  {
+    "problem": "Grass in public park overgrown due to lack of maintenance.",
+    "category": "Parks",
+    "image": "park_032.jpg"
+  },
+  {
+    "problem": "Park benches damaged and unusable.",
+    "category": "Parks",
+    "image": "park_033.jpg"
+  },
+  {
+    "problem": "Park lights not functioning after sunset.",
+    "category": "Parks",
+    "image": "park_034.jpg"
+  },
+  {
+    "problem": "Park littered with plastic waste and bottles.",
+    "category": "Parks",
+    "image": "park_035.jpg"
+  },
+  {
+    "problem": "Public toilet remains closed during working hours.",
+    "category": "Public Toilets",
+    "image": "toilet_036.jpg"
+  },
+  {
+    "problem": "Public toilet lacks water supply and cleanliness.",
+    "category": "Public Toilets",
+    "image": "toilet_037.jpg"
+  },
+  {
+    "problem": "Broken toilet doors compromising privacy.",
+    "category": "Public Toilets",
+    "image": "toilet_038.jpg"
+  },
+  {
+    "problem": "Overflowing sewage inside public toilet.",
+    "category": "Public Toilets",
+    "image": "toilet_039.jpg"
+  },
+  {
+    "problem": "No lighting inside public toilet facility.",
+    "category": "Public Toilets",
+    "image": "toilet_040.jpg"
+  },
+  {
+    "problem": "Illegal roadside encroachment reducing road width.",
+    "category": "Encroachment",
+    "image": "encroachment_041.jpg"
+  },
+  {
+    "problem": "Unauthorized street vendors blocking pedestrian footpath.",
+    "category": "Encroachment",
+    "image": "encroachment_042.jpg"
+  },
+  {
+    "problem": "Construction material occupying public road.",
+    "category": "Encroachment",
+    "image": "encroachment_043.jpg"
+  },
+  {
+    "problem": "Illegal parking permanently blocking footpath.",
+    "category": "Encroachment",
+    "image": "encroachment_044.jpg"
+  },
+  {
+    "problem": "Temporary shops occupying government land.",
+    "category": "Encroachment",
+    "image": "encroachment_045.jpg"
+  },
+  {
+    "problem": "Traffic signal not functioning during peak hours.",
+    "category": "Traffic Signals",
+    "image": "traffic_046.jpg"
+  },
+  {
+    "problem": "Pedestrian crossing signal remains permanently red.",
+    "category": "Traffic Signals",
+    "image": "traffic_047.jpg"
+  },
+  {
+    "problem": "Traffic signal pole damaged after storm.",
+    "category": "Traffic Signals",
+    "image": "traffic_048.jpg"
+  },
+  {
+    "problem": "Countdown timer missing at busy traffic intersection.",
+    "category": "Traffic Signals",
+    "image": "traffic_049.jpg"
+  },
+  {
+    "problem": "Traffic signal lights flickering intermittently causing confusion.",
+    "category": "Traffic Signals",
+    "image": "traffic_050.jpg"
+  },
+  {
+    "problem": "Broken footpath tiles causing pedestrians to trip.",
+    "category": "Footpaths",
+    "image": "footpath_051.jpg"
+  },
+  {
+    "problem": "Footpath blocked by parked vehicles.",
+    "category": "Footpaths",
+    "image": "footpath_052.jpg"
+  },
+  {
+    "problem": "Uneven pavement making wheelchair access difficult.",
+    "category": "Footpaths",
+    "image": "footpath_053.jpg"
+  },
+  {
+    "problem": "Footpath occupied by construction materials.",
+    "category": "Footpaths",
+    "image": "footpath_054.jpg"
+  },
+  {
+    "problem": "Missing tactile paving for visually impaired pedestrians.",
+    "category": "Footpaths",
+    "image": "footpath_055.jpg"
+  },
+  {
+    "problem": "Large number of stray dogs creating safety concerns.",
+    "category": "Stray Animals",
+    "image": "animals_056.jpg"
+  },
+  {
+    "problem": "Stray cattle blocking traffic during rush hours.",
+    "category": "Stray Animals",
+    "image": "animals_057.jpg"
+  },
+  {
+    "problem": "Injured stray animal requiring rescue assistance.",
+    "category": "Stray Animals",
+    "image": "animals_058.jpg"
+  },
+  {
+    "problem": "Aggressive monkey activity near residential buildings.",
+    "category": "Stray Animals",
+    "image": "animals_059.jpg"
+  },
+  {
+    "problem": "Uncontrolled stray pigs near garbage dumping site.",
+    "category": "Stray Animals",
+    "image": "animals_060.jpg"
+  },
+  {
+    "problem": "Tree branch hanging dangerously over the road.",
+    "category": "Tree Maintenance",
+    "image": "tree_061.jpg"
+  },
+  {
+    "problem": "Fallen tree blocking traffic after heavy rain.",
+    "category": "Tree Maintenance",
+    "image": "tree_062.jpg"
+  },
+  {
+    "problem": "Dead tree posing risk of collapse.",
+    "category": "Tree Maintenance",
+    "image": "tree_063.jpg"
+  },
+  {
+    "problem": "Overgrown tree branches obstructing street lights.",
+    "category": "Tree Maintenance",
+    "image": "tree_064.jpg"
+  },
+  {
+    "problem": "Tree roots damaging the pavement.",
+    "category": "Tree Maintenance",
+    "image": "tree_065.jpg"
+  },
+  {
+    "problem": "Illegal construction extending onto public land.",
+    "category": "Illegal Construction",
+    "image": "construction_066.jpg"
+  },
+  {
+    "problem": "Unauthorized building work without safety barricades.",
+    "category": "Illegal Construction",
+    "image": "construction_067.jpg"
+  },
+  {
+    "problem": "Construction debris blocking public road.",
+    "category": "Illegal Construction",
+    "image": "construction_068.jpg"
+  },
+  {
+    "problem": "Building extension violating setback rules.",
+    "category": "Illegal Construction",
+    "image": "construction_069.jpg"
+  },
+  {
+    "problem": "Unsafe demolition work creating dust pollution.",
+    "category": "Illegal Construction",
+    "image": "construction_070.jpg"
+  },
+  {
+    "problem": "Excessive dust from nearby construction affecting residents.",
+    "category": "Air Pollution",
+    "image": "air_071.jpg"
+  },
+  {
+    "problem": "Garbage burning causing severe air pollution.",
+    "category": "Air Pollution",
+    "image": "air_072.jpg"
+  },
+  {
+    "problem": "Industrial smoke affecting nearby locality.",
+    "category": "Air Pollution",
+    "image": "air_073.jpg"
+  },
+  {
+    "problem": "Continuous emissions from diesel generators.",
+    "category": "Air Pollution",
+    "image": "air_074.jpg"
+  },
+  {
+    "problem": "Heavy dust accumulation due to uncovered construction site.",
+    "category": "Air Pollution",
+    "image": "air_075.jpg"
+  },
+  {
+    "problem": "Loudspeaker noise exceeding permitted limits at night.",
+    "category": "Noise Pollution",
+    "image": "noise_076.jpg"
+  },
+  {
+    "problem": "Construction work creating excessive noise after midnight.",
+    "category": "Noise Pollution",
+    "image": "noise_077.jpg"
+  },
+  {
+    "problem": "Generator noise disturbing nearby residents.",
+    "category": "Noise Pollution",
+    "image": "noise_078.jpg"
+  },
+  {
+    "problem": "Constant vehicle honking near hospital zone.",
+    "category": "Noise Pollution",
+    "image": "noise_079.jpg"
+  },
+  {
+    "problem": "Illegal DJ system operating in residential area.",
+    "category": "Noise Pollution",
+    "image": "noise_080.jpg"
+  },
+  {
+    "problem": "Waterlogging after light rainfall at major intersection.",
+    "category": "Water Logging",
+    "image": "waterlogging_081.jpg"
+  },
+  {
+    "problem": "Residential street submerged due to poor drainage.",
+    "category": "Water Logging",
+    "image": "waterlogging_082.jpg"
+  },
+  {
+    "problem": "Bus stop inaccessible because of stagnant rainwater.",
+    "category": "Water Logging",
+    "image": "waterlogging_083.jpg"
+  },
+  {
+    "problem": "Underpass flooded after monsoon showers.",
+    "category": "Water Logging",
+    "image": "waterlogging_084.jpg"
+  },
+  {
+    "problem": "Rainwater entering homes due to blocked drains.",
+    "category": "Water Logging",
+    "image": "waterlogging_085.jpg"
+  },
+  {
+    "problem": "Mosquito breeding in stagnant water near residential colony.",
+    "category": "Mosquito Breeding",
+    "image": "mosquito_086.jpg"
+  },
+  {
+    "problem": "Open drain becoming mosquito breeding hotspot.",
+    "category": "Mosquito Breeding",
+    "image": "mosquito_087.jpg"
+  },
+  {
+    "problem": "Unused construction site filled with stagnant water.",
+    "category": "Mosquito Breeding",
+    "image": "mosquito_088.jpg"
+  },
+  {
+    "problem": "Water-filled garbage containers attracting mosquitoes.",
+    "category": "Mosquito Breeding",
+    "image": "mosquito_089.jpg"
+  },
+  {
+    "problem": "Park fountain left unattended causing mosquito breeding.",
+    "category": "Mosquito Breeding",
+    "image": "mosquito_090.jpg"
+  },
+  {
+    "problem": "Broken CCTV camera at public market entrance.",
+    "category": "Public Safety",
+    "image": "safety_091.jpg"
+  },
+  {
+    "problem": "Damaged public railing near pedestrian bridge.",
+    "category": "Public Safety",
+    "image": "safety_092.jpg"
+  },
+  {
+    "problem": "Open electrical junction box accessible to public.",
+    "category": "Public Safety",
+    "image": "safety_093.jpg"
+  },
+  {
+    "problem": "Loose electric wires hanging over the street.",
+    "category": "Public Safety",
+    "image": "safety_094.jpg"
+  },
+  {
+    "problem": "Broken barricades around excavation site.",
+    "category": "Public Safety",
+    "image": "safety_095.jpg"
+  },
+  {
+    "problem": "Dirty public square requiring immediate cleaning.",
+    "category": "Civic Cleanliness",
+    "image": "cleanliness_096.jpg"
+  },
+  {
+    "problem": "Graffiti and wall defacement on public property.",
+    "category": "Civic Cleanliness",
+    "image": "cleanliness_097.jpg"
+  },
+  {
+    "problem": "Spilled waste on road creating unhygienic conditions.",
+    "category": "Civic Cleanliness",
+    "image": "cleanliness_098.jpg"
+  },
+  {
+    "problem": "Market area covered with litter after closing hours.",
+    "category": "Civic Cleanliness",
+    "image": "cleanliness_099.jpg"
+  },
+  {
+    "problem": "Public dustbins missing from busy commercial street.",
+    "category": "Civic Cleanliness",
+    "image": "cleanliness_100.jpg"
+  }
+]

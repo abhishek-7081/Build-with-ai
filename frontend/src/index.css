@@ -1173,3 +1173,130 @@ textarea {
   font-size: 20px;
   font-weight: 800;
 }
+
+/* Map Styles */
+.map-container-selector {
+  height: 250px;
+  border-radius: 12px;
+  border: 1px solid var(--border-glass);
+  overflow: hidden;
+  margin-top: 10px;
+  position: relative;
+  z-index: 10;
+}
+
+.map-picker-banner {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dashboard-master-map {
+  height: 350px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--border-glass);
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-card);
+  z-index: 5;
+}
+
+.drawer-mini-map {
+  height: 180px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border-glass);
+  overflow: hidden;
+  margin-top: 10px;
+  z-index: 5;
+}
+
+/* Auth Styles */
+.auth-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: var(--shadow-card);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.auth-tab {
+  flex-grow: 1;
+  padding: 12px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+}
+
+.auth-tab.active {
+  color: var(--metro-blue);
+  border-bottom-color: var(--metro-blue);
+}
+
+.profile-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(56, 189, 248, 0.04);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+}
+
+.profile-avatar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--metro-blue);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-family: var(--font-display);
+}

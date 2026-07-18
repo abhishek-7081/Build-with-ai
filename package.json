@@ -1,0 +1,12 @@
+{
+  "name": "delhi-civic-navigator",
+  "version": "1.0.0",
+  "description": "Full-stack Delhi Civic Service Navigator Web Application",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "start:backend": "npm --prefix backend start",
+    "start:frontend": "npm --prefix frontend run dev",
+    "dev": "npm run start:backend & npm run start:frontend"
+  }
+}

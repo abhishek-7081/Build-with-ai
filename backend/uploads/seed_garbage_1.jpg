@@ -1,0 +1,10 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="#1b1c20"/>
+    <circle cx="400" cy="280" r="140" fill="#24252d"/>
+    <path d="M 330 330 L 350 210 L 450 210 L 470 330 Z" fill="#4b5563" opacity="0.5"/>
+    <path d="M 310 180 L 490 180" stroke="#9ca3af" stroke-width="8"/>
+    <rect x="360" y="230" width="20" height="70" rx="3" fill="#1f2937"/>
+    <rect x="420" y="230" width="20" height="70" rx="3" fill="#1f2937"/>
+    <text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="32" fill="#f87171" font-weight="600">GARBAGE ACCUMULATION</text>
+    <text x="50%" y="73%" dominant-baseline="middle" text-anchor="middle" font-family="'Inter', sans-serif" font-size="18" fill="#6b7280">Sector 8 Rohini Depot Zone</text>
+  </svg>

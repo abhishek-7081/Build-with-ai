@@ -1049,3 +1049,127 @@ textarea {
   padding: 40px 20px;
   color: var(--text-muted);
 }
+
+/* Department Selection Portal Styles */
+.dept-select-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.dept-select-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.dept-select-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.dept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.dept-card {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 220px;
+}
+
+.dept-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--dept-color, var(--metro-blue));
+}
+
+.dept-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--dept-color, var(--metro-blue));
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 255, 255, 0.02);
+  background: var(--bg-card-hover);
+}
+
+.dept-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dept-icon {
+  font-size: 32px;
+}
+
+.dept-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 8px;
+}
+
+.dept-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.dept-categories {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-glass);
+}
+
+.dept-badge-count {
+  background: var(--badge-bg, rgba(255, 255, 255, 0.1));
+  color: var(--badge-text, var(--text-primary));
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.dept-header-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+}
+
+.dept-header-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dept-header-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+}

@@ -1,0 +1,9 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="#0f172a"/>
+    <rect x="150" y="450" width="500" height="150" fill="#334155"/>
+    <circle cx="280" cy="350" r="60" fill="#e2e8f0" opacity="0.15"/>
+    <path d="M 220 350 L 340 350" stroke="#f43f5e" stroke-width="4"/>
+    <path d="M 280 290 L 280 410" stroke="#f43f5e" stroke-width="4"/>
+    <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="32" fill="#38bdf8" font-weight="600">ILLEGAL ENCROACHMENT ACTIVE</text>
+    <text x="50%" y="48%" dominant-baseline="middle" text-anchor="middle" font-family="'Inter', sans-serif" font-size="18" fill="#94a3b8">Lajpat Nagar Central Market Drive</text>
+  </svg>

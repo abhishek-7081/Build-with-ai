@@ -1,0 +1,492 @@
+{
+  "complaints": [
+    {
+      "id": "comp_zu48yyrxj",
+      "title": "Others Issue",
+      "category": "Others",
+      "department": "Delhi Civic helpline",
+      "severity": "Low",
+      "location": "Near my home",
+      "description": "Ghar ki prblem hai ",
+      "status": "Pending",
+      "priority": 15,
+      "priorityLevel": "Low",
+      "reportCount": 1,
+      "createdAt": "2026-07-18T06:17:34.960Z",
+      "updatedAt": "2026-07-18T06:17:34.960Z",
+      "images": [
+        "1784355454931-687085806.jpg"
+      ],
+      "history": [
+        {
+          "status": "Pending",
+          "timestamp": "2026-07-18T06:17:34.960Z",
+          "note": "System auto-registered complaint."
+        }
+      ]
+    },
+    {
+      "id": "comp_1",
+      "title": "Sewage Overflow near Munirka Metro Gate 1",
+      "category": "Sewage Problems",
+      "department": "DJB (Delhi Jal Board)",
+      "severity": "High",
+      "location": "Munirka Metro Gate 1",
+      "description": "Huge sewage overflow on outer ring road near Munirka causing terrible smell and traffic block.",
+      "status": "In Progress",
+      "priority": 100,
+      "priorityLevel": "Critical",
+      "reportCount": 18,
+      "createdAt": "2026-07-16T06:16:44.480Z",
+      "updatedAt": "2026-07-18T05:16:44.481Z",
+      "images": [
+        "seed_sewage_1.jpg",
+        "seed_sewage_2.jpg"
+      ],
+      "history": [
+        {
+          "status": "Pending",
+          "timestamp": "2026-07-16T06:16:44.481Z",
+          "note": "System auto-registered complaint."
+        },
+        {
+          "status": "In Progress",
+          "timestamp": "2026-07-16T14:16:44.481Z",
+          "note": "Routed to DJB maintenance team."
+        }
+      ]
+    },
+    {
+      "id": "comp_2",
+      "title": "Broken Street Lights at Janakpuri District Center",
+      "category": "Street Lights",
+      "department": "MCD (Municipal Corporation of Delhi)",
+      "severity": "High",
+      "location": "Janakpuri District Center",
+      "description": "Street lights near District Center Gate 2 are not working for a week. The entire stretch is pitch dark and dangerous for commuters at night.",
+      "status": "Pending",
+      "priority": 99,
+      "priorityLevel": "Critical",
+      "reportCount": 4,
+      "createdAt": "2026-07-17T18:16:44.481Z",
+      "updatedAt": "2026-07-17T18:16:44.481Z",
+      "images": [
+        "seed_lights_1.jpg"
+      ],
+      "history": [
+        {
+          "status": "Pending",
+          "timestamp": "2026-07-17T18:16:44.481Z",
+          "note": "System auto-registered complaint."
+        }
+      ]
+    },
+    {
+      "id": "comp_3",
+      "title": "Garbage Dump near Rohini Sector 8 Market",
+      "category": "Garbage Collection",
+      "department": "MCD (Municipal Corporation of Delhi)",
+      "severity": "Medium",
+      "location": "Rohini Sector 8 Market",
+      "description": "Massive pile of plastic and organic waste accumulating near Sector 8 market. Stink is unbearable and stray cows are eating trash.",
+      "status": "Pending",
+      "priority": 66,
+      "priorityLevel": "High",
+      "reportCount": 8,
+      "createdAt": "2026-07-18T00:16:44.481Z",
+      "updatedAt": "2026-07-18T00:16:44.481Z",
+      "images": [
+        "seed_garbage_1.jpg"
+      ],
+      "history": [
+        {
+          "status": "Pending",
+          "timestamp": "2026-07-18T00:16:44.481Z",
+          "note": "System auto-registered complaint."
+        }
+      ]
+    },
+    {
+      "id": "comp_4",
+      "title": "Electric Transformer Sparks in Saket Block E",
+      "category": "Electricity",
+      "department": "DTL / DISCOM (Tata Power/BSES)",
+      "severity": "Critical",
+      "location": "Saket Block E Market",
+      "description": "Sparks coming out of electric transformer box outside Block E market. Extremely dangerous, short circuit hazard!",
+      "status": "Resolved",
+      "priority": 95,
+      "priorityLevel": "Critical",
+      "reportCount": 1,
+      "createdAt": "2026-07-17T06:16:44.481Z",
+      "updatedAt": "2026-07-17T12:16:44.481Z",
+      "images": [
+        "seed_sparks_1.jpg"
+      ],
+      "history": [
+        {
+          "status": "Pending",
+          "timestamp": "2026-07-17T06:16:44.481Z",
+          "note": "System auto-registered complaint."
+        },
+        {
+          "status": "In Progress",
+          "timestamp": "2026-07-17T07:16:44.481Z",
+          "note": "Technicians dispatched."
+        },
+        {
+          "status": "Resolved",
+          "timestamp": "2026-07-17T12:16:44.481Z",
+          "note": "Fuse box replaced and wires insulated."
+        }
+      ]
+    },
+    {
+      "id": "comp_5",
+      "title": "Encroachment of Footpath in Lajpat Nagar II",
+      "category": "Encroachment",
+      "department": "MCD (Municipal Corporation of Delhi)",
+      "severity": "Medium",
+      "location": "Lajpat Nagar II Market",
+      "description": "Street vendors have completely blocked the pedestrian path. Pedestrians have to walk on the main road causing heavy traffic and risk.",
+      "status": "In Progress",
+      "priority": 68,
+      "priorityLevel": "High",
+      "reportCount": 3,
+      "createdAt": "2026-07-15T06:16:44.481Z",
+      "updatedAt": "2026-07-17T20:16:44.481Z",
+      "images": [
+        "seed_vendors_1.jpg"
+      ],
+      "history": [
+        {
+          "status": "Pending",
+          "timestamp": "2026-07-15T06:16:44.481Z",
+          "note": "System auto-registered complaint."
+        },
+        {
+          "status": "In Progress",
+          "timestamp": "2026-07-17T20:16:44.481Z",
+          "note": "Assigned to MCD anti-encroachment drive team."
+        }
+      ]
+    }
+  ],
+  "reports": [
+    {
+      "id": "rep_uw2qglura",
+      "complaintId": "comp_zu48yyrxj",
+      "description": "Ghar ki prblem hai ",
+      "image": "1784355454931-687085806.jpg",
+      "createdAt": "2026-07-18T06:17:34.960Z",
+      "userName": "Abhi",
+      "userPhone": "123456789"
+    },
+    {
+      "id": "rep_1a",
+      "complaintId": "comp_1",
+      "description": "Huge sewage overflow on outer ring road near Munirka causing terrible smell and traffic block.",
+      "image": "seed_sewage_1.jpg",
+      "createdAt": "2026-07-16T06:16:44.481Z",
+      "userName": "Amit Sharma",
+      "userPhone": "98101XXXXX"
+    },
+    {
+      "id": "rep_1b",
+      "complaintId": "comp_1",
+      "description": "Dirty sewage water flooding the road outside Munirka station, cannot walk without stepping in sewer water.",
+      "image": "seed_sewage_2.jpg",
+      "createdAt": "2026-07-16T12:16:44.481Z",
+      "userName": "Priya Patel",
+      "userPhone": "95603XXXXX"
+    },
+    {
+      "id": "rep_1c",
+      "complaintId": "comp_1",
+      "description": "Drainage overflow near gate 1 of Munirka metro station, traffic is slow and smell is horrible.",
+      "image": null,
+      "createdAt": "2026-07-17T10:16:44.481Z",
+      "userName": "Rohan Gupta",
+      "userPhone": "99104XXXXX"
+    },
+    {
+      "id": "rep_2a",
+      "complaintId": "comp_2",
+      "description": "Street lights near District Center Gate 2 are not working for a week. The entire stretch is pitch dark and dangerous for commuters at night.",
+      "image": "seed_lights_1.jpg",
+      "createdAt": "2026-07-17T18:16:44.481Z",
+      "userName": "Vikram Singh",
+      "userPhone": "98711XXXXX"
+    },
+    {
+      "id": "rep_3a",
+      "complaintId": "comp_3",
+      "description": "Massive pile of plastic and organic waste accumulating near Sector 8 market. Stink is unbearable and stray cows are eating trash.",
+      "image": "seed_garbage_1.jpg",
+      "createdAt": "2026-07-18T00:16:44.481Z",
+      "userName": "Sneha Goel",
+      "userPhone": "98188XXXXX"
+    },
+    {
+      "id": "rep_4a",
+      "complaintId": "comp_4",
+      "description": "Sparks coming out of electric transformer box outside Block E market. Extremely dangerous, short circuit hazard!",
+      "image": "seed_sparks_1.jpg",
+      "createdAt": "2026-07-17T06:16:44.481Z",
+      "userName": "Rajesh Kumar",
+      "userPhone": "98991XXXXX"
+    },
+    {
+      "id": "rep_5a",
+      "complaintId": "comp_5",
+      "description": "Street vendors have completely blocked the pedestrian path. Pedestrians have to walk on the main road causing heavy traffic and risk.",
+      "image": "seed_vendors_1.jpg",
+      "createdAt": "2026-07-15T06:16:44.481Z",
+      "userName": "Neha Sen",
+      "userPhone": "93122XXXXX"
+    },
+    {
+      "id": "rep_1_4",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #4 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T10:16:44.481Z",
+      "userName": "Resident #4",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_5",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #5 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T11:16:44.481Z",
+      "userName": "Resident #5",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_6",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #6 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T12:16:44.481Z",
+      "userName": "Resident #6",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_7",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #7 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T13:16:44.481Z",
+      "userName": "Resident #7",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_8",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #8 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T14:16:44.481Z",
+      "userName": "Resident #8",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_9",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #9 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T15:16:44.481Z",
+      "userName": "Resident #9",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_10",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #10 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T16:16:44.481Z",
+      "userName": "Resident #10",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_11",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #11 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T17:16:44.481Z",
+      "userName": "Resident #11",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_12",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #12 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T18:16:44.481Z",
+      "userName": "Resident #12",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_13",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #13 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T19:16:44.481Z",
+      "userName": "Resident #13",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_14",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #14 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T20:16:44.481Z",
+      "userName": "Resident #14",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_15",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #15 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T21:16:44.481Z",
+      "userName": "Resident #15",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_16",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #16 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T22:16:44.481Z",
+      "userName": "Resident #16",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_17",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #17 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-16T23:16:44.481Z",
+      "userName": "Resident #17",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_1_18",
+      "complaintId": "comp_1",
+      "description": "Citizen duplicate report #18 about sewage overflow in Munirka.",
+      "image": null,
+      "createdAt": "2026-07-17T00:16:44.481Z",
+      "userName": "Resident #18",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_2_2",
+      "complaintId": "comp_2",
+      "description": "Citizen duplicate report #2 about street lights in Janakpuri.",
+      "image": null,
+      "createdAt": "2026-07-17T20:16:44.481Z",
+      "userName": "Resident #2",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_2_3",
+      "complaintId": "comp_2",
+      "description": "Citizen duplicate report #3 about street lights in Janakpuri.",
+      "image": null,
+      "createdAt": "2026-07-17T21:16:44.481Z",
+      "userName": "Resident #3",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_2_4",
+      "complaintId": "comp_2",
+      "description": "Citizen duplicate report #4 about street lights in Janakpuri.",
+      "image": null,
+      "createdAt": "2026-07-17T22:16:44.481Z",
+      "userName": "Resident #4",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_3_2",
+      "complaintId": "comp_3",
+      "description": "Citizen duplicate report #2 about garbage pile at Rohini Sector 8.",
+      "image": null,
+      "createdAt": "2026-07-18T02:16:44.481Z",
+      "userName": "Resident #2",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_3_3",
+      "complaintId": "comp_3",
+      "description": "Citizen duplicate report #3 about garbage pile at Rohini Sector 8.",
+      "image": null,
+      "createdAt": "2026-07-18T03:16:44.481Z",
+      "userName": "Resident #3",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_3_4",
+      "complaintId": "comp_3",
+      "description": "Citizen duplicate report #4 about garbage pile at Rohini Sector 8.",
+      "image": null,
+      "createdAt": "2026-07-18T04:16:44.481Z",
+      "userName": "Resident #4",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_3_5",
+      "complaintId": "comp_3",
+      "description": "Citizen duplicate report #5 about garbage pile at Rohini Sector 8.",
+      "image": null,
+      "createdAt": "2026-07-18T05:16:44.481Z",
+      "userName": "Resident #5",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_3_6",
+      "complaintId": "comp_3",
+      "description": "Citizen duplicate report #6 about garbage pile at Rohini Sector 8.",
+      "image": null,
+      "createdAt": "2026-07-18T06:16:44.481Z",
+      "userName": "Resident #6",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_3_7",
+      "complaintId": "comp_3",
+      "description": "Citizen duplicate report #7 about garbage pile at Rohini Sector 8.",
+      "image": null,
+      "createdAt": "2026-07-18T07:16:44.481Z",
+      "userName": "Resident #7",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_3_8",
+      "complaintId": "comp_3",
+      "description": "Citizen duplicate report #8 about garbage pile at Rohini Sector 8.",
+      "image": null,
+      "createdAt": "2026-07-18T08:16:44.481Z",
+      "userName": "Resident #8",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_5_2",
+      "complaintId": "comp_5",
+      "description": "Citizen duplicate report #2 about hawker encroachment in Lajpat Nagar.",
+      "image": null,
+      "createdAt": "2026-07-16T02:16:44.481Z",
+      "userName": "Resident #2",
+      "userPhone": "9812XXXXXX"
+    },
+    {
+      "id": "rep_5_3",
+      "complaintId": "comp_5",
+      "description": "Citizen duplicate report #3 about hawker encroachment in Lajpat Nagar.",
+      "image": null,
+      "createdAt": "2026-07-16T12:16:44.481Z",
+      "userName": "Resident #3",
+      "userPhone": "9812XXXXXX"
+    }
+  ]
+}

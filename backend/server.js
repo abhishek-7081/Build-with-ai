@@ -17,6 +17,13 @@ import { analyzeDescription } from "./nlpProcessor.js";
 import { findDuplicateComplaint } from "./duplicateDetector.js";
 import { User } from "./models/User.js";
 import { Complaint } from "./models/Complaint.js";
+import { 
+  connectElasticsearch, 
+  indexComplaint, 
+  deleteComplaint, 
+  searchNearbyComplaints, 
+  findSimilarElasticComplaints 
+} from "./elasticSync.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,8 +35,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Establish connection to MongoDB
+// Establish connection to MongoDB & Elasticsearch
 connectDatabase();
+connectElasticsearch();
 
 // Configure Cloudinary if credentials are provided in .env
 let useCloudinary = false;
@@ -337,19 +345,38 @@ app.post("/api/complaints", optionalAuthenticateToken, upload.single("image"), a
       nlpData.location = locationOverride.trim();
     }
 
-    // Fetch active complaints to scan for duplicate issues in same category
-    const activeComplaints = await Complaint.find({ status: { $ne: "Resolved" } });
+    // Fetch similar complaints using Elasticsearch
+    let duplicateMatch = null;
+    try {
+      const similarHits = await findSimilarElasticComplaints(description, locationCoords.lat, locationCoords.lng, 1.0);
+      if (similarHits && similarHits.length > 0) {
+        // Find first hit that matches the category
+        const matchedHit = similarHits.find(h => h.complaint.category === nlpData.category);
+        if (matchedHit) {
+          duplicateMatch = {
+            complaint: matchedHit.complaint,
+            similarityScore: matchedHit.score
+          };
+          console.log(`Elasticsearch matched duplicate with score: ${matchedHit.score}`);
+        }
+      }
+    } catch (esErr) {
+      console.warn("Elasticsearch duplicate match check failed, falling back to local MongoDB match:", esErr.message);
+    }
 
-    // Check similarity
-    const duplicateMatch = findDuplicateComplaint({
-      description,
-      category: nlpData.category,
-      location: nlpData.location
-    }, activeComplaints);
+    // Fallback to local MongoDB similarity check if ES query yielded nothing or failed
+    if (!duplicateMatch) {
+      const activeComplaints = await Complaint.find({ status: { $ne: "Resolved" } });
+      duplicateMatch = findDuplicateComplaint({
+        description,
+        category: nlpData.category,
+        location: nlpData.location
+      }, activeComplaints);
+    }
 
     if (duplicateMatch) {
       // Merge report with existing MongoDB Complaint
-      const matchedId = duplicateMatch.complaint._id;
+      const matchedId = duplicateMatch.complaint._id || duplicateMatch.complaint.id;
       const complaint = await Complaint.findById(matchedId);
 
       // Create new nested report subdocument
@@ -388,6 +415,9 @@ app.post("/api/complaints", optionalAuthenticateToken, upload.single("image"), a
       });
 
       const savedComplaint = await complaint.save();
+      
+      // Synchronize update to Elasticsearch index
+      await indexComplaint(savedComplaint);
       
       // If Cloudinary URL was used and we had local fallback filename, resolve full path on response
       const resolvedImages = savedComplaint.images.map(img => 
@@ -442,6 +472,9 @@ app.post("/api/complaints", optionalAuthenticateToken, upload.single("image"), a
 
       const saved = await newComplaint.save();
 
+      // Synchronize new complaint to Elasticsearch index
+      await indexComplaint(saved);
+
       res.status(201).json({
         success: true,
         isDuplicate: false,
@@ -481,6 +514,9 @@ app.patch("/api/complaints/:id/status", async (req, res) => {
     // Save status change
     const saved = await complaint.save();
 
+    // Sync to Elasticsearch
+    await indexComplaint(saved);
+
     res.json({
       success: true,
       message: `Complaint status updated to ${status}.`,
@@ -500,6 +536,14 @@ app.post("/api/analyze-test", (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Failed to run analysis." });
   }
+});
+
+// Dynamic configuration endpoint for Kibana dashboards & maps
+app.get("/api/config", (req, res) => {
+  res.json({
+    kibanaDashboardUrl: process.env.KIBANA_DASHBOARD_URL || "",
+    kibanaMapsUrl: process.env.KIBANA_MAPS_URL || ""
+  });
 });
 
 // 3. Comments and Community Support Endpoints
@@ -573,6 +617,9 @@ app.post("/api/complaints/:id/support", optionalAuthenticateToken, async (req, r
 
     const saved = await complaint.save();
     
+    // Sync to Elasticsearch
+    await indexComplaint(saved);
+    
     res.json({
       success: true,
       message: "Thank you for supporting this issue! Its community priority score has been elevated.",
@@ -610,6 +657,9 @@ app.post("/api/complaints/:id/comments", optionalAuthenticateToken, async (req, 
     complaint.comments.push(newComment);
     const saved = await complaint.save();
 
+    // Sync to Elasticsearch
+    await indexComplaint(saved);
+
     res.json({
       success: true,
       message: "Comment posted successfully.",
@@ -634,7 +684,64 @@ app.get("/api/complaints/:id/comments", async (req, res) => {
   }
 });
 
+// 4. Elasticsearch Geo-Spatial & Proximity Search Route
+app.get("/api/complaints/nearby", async (req, res) => {
+  try {
+    const { lat, lng, radius } = req.query;
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    const radiusNum = parseFloat(radius) || 1.5; // Radius in KM (default 1.5km)
+
+    if (isNaN(latNum) || isNaN(lngNum)) {
+      return res.status(400).json({ error: "Latitude and Longitude query parameters are required." });
+    }
+
+    console.log(`Executing nearby search for coordinates [${latNum}, ${lngNum}] within ${radiusNum} km...`);
+    let results = await searchNearbyComplaints(latNum, lngNum, radiusNum);
+
+    // Fallback: if Elasticsearch is not initialized or down, query MongoDB
+    if (results === null) {
+      console.log("Elasticsearch not available. Falling back to MongoDB proximity check.");
+      const activeComplaints = await Complaint.find({ status: { $ne: "Resolved" } });
+      results = activeComplaints.filter(comp => {
+        if (!comp.locationCoords || !comp.locationCoords.lat || !comp.locationCoords.lng) return false;
+        const latDiff = Math.abs(comp.locationCoords.lat - latNum);
+        const lngDiff = Math.abs(comp.locationCoords.lng - lngNum);
+        return latDiff < 0.015 && lngDiff < 0.015; // Approximate degree difference
+      }).map(c => ({
+        _id: c._id,
+        id: c._id,
+        ...c.toObject()
+      }));
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error("Nearby complaints search route failed:", error);
+    res.status(500).json({ error: "Failed to retrieve nearby complaints." });
+  }
+});
+
+// Delete Complaint Endpoint (MongoDB + Elasticsearch sync)
+app.delete("/api/complaints/:id", async (req, res) => {
+  try {
+    const complaint = await Complaint.findByIdAndDelete(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ error: "Complaint not found." });
+    }
+
+    // Sync deletion to Elasticsearch
+    await deleteComplaint(req.params.id);
+
+    res.json({ success: true, message: "Complaint removed successfully." });
+  } catch (err) {
+    console.error("Failed to delete complaint:", err);
+    res.status(500).json({ error: "Failed to remove complaint." });
+  }
+});
+
 // Start API Server
 app.listen(PORT, () => {
   console.log(`Delhi Civic Service Navigator Backend listening on port ${PORT}`);
 });
+// Hot reloader triggered successfully

@@ -152,6 +152,18 @@ function App() {
   const [latitude, setLatitude] = useState(28.6139);
   const [longitude, setLongitude] = useState(77.2090);
 
+  // Elasticsearch nearby search results
+  const [nearbyComplaints, setNearbyComplaints] = useState([]);
+  const [loadingNearby, setLoadingNearby] = useState(false);
+
+  // Kibana integration configurations
+  const [kibanaConfig, setKibanaConfig] = useState({
+    kibanaDashboardUrl: "",
+    kibanaMapsUrl: ""
+  });
+
+  const [analyticsView, setAnalyticsView] = useState("kibana"); // kibana, heatmap, local
+
   // Tracking State
   const [trackingId, setTrackingId] = useState("");
   const [trackedComplaint, setTrackedComplaint] = useState(null);
@@ -178,10 +190,43 @@ function App() {
   const fileInputRef = useRef(null);
   const pickerMarkerRef = useRef(null);
 
-  // Load complaints initially
+  // Load complaints & Kibana configuration initially
   useEffect(() => {
     fetchComplaints();
+    
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`${API_URL}/config`);
+        if (res.ok) {
+          const data = await res.json();
+          setKibanaConfig(data);
+        }
+      } catch (err) {
+        console.error("Failed to load Kibana dynamic configurations:", err);
+      }
+    };
+    fetchConfig();
   }, []);
+
+  // Fetch nearby unresolved issues from Elasticsearch backend on coords or list changes
+  useEffect(() => {
+    const fetchNearby = async () => {
+      setLoadingNearby(true);
+      try {
+        const res = await fetch(`${API_URL}/complaints/nearby?lat=${latitude}&lng=${longitude}&radius=1.5`);
+        if (res.ok) {
+          const data = await res.json();
+          setNearbyComplaints(data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load nearby complaints from Elasticsearch:", err);
+      } finally {
+        setLoadingNearby(false);
+      }
+    };
+    
+    fetchNearby();
+  }, [latitude, longitude, complaints]);
 
   // Sync citizen's own submitted reports when complaints are added or authentication state updates
   useEffect(() => {
@@ -768,14 +813,6 @@ function App() {
 
   const maxCategoryCount = Math.max(...Object.values(categoryCounts), 1);
 
-  const nearbyComplaints = complaints.filter(comp => {
-    if (!comp.locationCoords || !comp.locationCoords.lat || !comp.locationCoords.lng) return false;
-    if (comp.status === "Resolved") return false; // Focus only on active/unresolved issues
-    const latDiff = Math.abs(comp.locationCoords.lat - latitude);
-    const lngDiff = Math.abs(comp.locationCoords.lng - longitude);
-    return latDiff < 0.015 && lngDiff < 0.015; // ~1.5km radius
-  });
-
   return (
     <div className="app-container">
       {/* Header bar */}
@@ -783,7 +820,7 @@ function App() {
         <div className="brand-section">
           <span className="brand-logo">🏛️</span>
           <div className="brand-title-group">
-            <h1>Delhi Civic Service Navigator</h1>
+            <h1>Delhi Service Hub</h1>
             <p>Intelligent Routing, Cloud Storage, &amp; Hotspot Maps</p>
           </div>
         </div>
@@ -1262,7 +1299,7 @@ function App() {
                           </span>
                         </div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "600px", overflowY: "auto", paddingRight: "4px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingRight: "4px" }}>
                           {nearbyComplaints.map(comp => {
                             const isExpanded = expandedNearbyId === comp._id || expandedNearbyId === comp.id;
                             const compId = comp._id || comp.id;
@@ -1277,7 +1314,11 @@ function App() {
                                     <img 
                                       src={comp.images[0].startsWith("http") ? comp.images[0] : `${MEDIA_URL}/${comp.images[0]}`} 
                                       alt={comp.title} 
-                                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f1f5f9'/%3E%3Ctext x='50' y='50' font-size='30' text-anchor='middle' dominant-baseline='middle'%3E⚠️%3C/text%3E%3C/svg%3E";
+                                      }}
                                     />
                                   ) : (
                                     <div style={{ fontSize: "48px" }}>
@@ -1872,79 +1913,217 @@ function App() {
               </div>
             </div>
 
-            {/* Two-Column Analytics Charts */}
-            <div className="portal-grid">
-              {/* Chart Column */}
-              <div className="glass-card">
-                <h3 className="drawer-section-title" style={{ fontSize: "16px", marginBottom: "20px" }}>
-                  Active Issues distribution by Civic Category
-                </h3>
-                <div className="chart-container">
-                  {CATEGORIES.map(cat => {
-                    const count = categoryCounts[cat] || 0;
-                    const heightPercent = Math.max(5, (count / maxCategoryCount) * 100);
-                    
-                    return (
-                      <div key={cat} className="chart-bar" style={{ height: `${heightPercent}%` }}>
-                        <span className="chart-bar-hover-val">{count}</span>
-                        <div 
-                          className="chart-label" 
-                          style={{ 
-                            position: "absolute", 
-                            bottom: "-25px", 
-                            left: "50%", 
-                            transform: "translateX(-50%) rotate(45deg)", 
-                            transformOrigin: "left top",
-                            whiteSpace: "nowrap",
-                            fontSize: "8.5px"
-                          }}
-                        >
-                          {cat}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{ height: "60px" }} />
-              </div>
+            {/* Kibana / Maps / Local Analytics tab selectors */}
+            <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border-glass)", paddingBottom: "12px", marginBottom: "8px", flexWrap: "wrap" }}>
+              <button 
+                type="button" 
+                onClick={() => setAnalyticsView("kibana")}
+                style={{ 
+                  background: analyticsView === "kibana" ? "var(--elastic-blue)" : "var(--bg-card)",
+                  color: analyticsView === "kibana" ? "#ffffff" : "var(--text-primary)",
+                  border: "1px solid var(--border-glass)",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  fontSize: "12.5px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.2s"
+                }}
+              >
+                📊 Kibana Dashboard
+              </button>
+              
+              <button 
+                type="button" 
+                onClick={() => setAnalyticsView("heatmap")}
+                style={{ 
+                  background: analyticsView === "heatmap" ? "var(--elastic-blue)" : "var(--bg-card)",
+                  color: analyticsView === "heatmap" ? "#ffffff" : "var(--text-primary)",
+                  border: "1px solid var(--border-glass)",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  fontSize: "12.5px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.2s"
+                }}
+              >
+                🗺️ Hotspot Heat Map
+              </button>
 
-              {/* Department Statistics Summary */}
-              <div className="glass-card">
-                <h3 className="drawer-section-title" style={{ fontSize: "16px", marginBottom: "20px" }}>
-                  Delhi Government Agency Performance Logs
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  {[
-                    { dept: "MCD (Municipal Corporation of Delhi)", color: "var(--metro-magenta)", desc: "Waste collection, Street lights, Encroachment, Toilets" },
-                    { dept: "PWD (Public Works Department)", color: "var(--metro-blue)", desc: "Road repair, Drainage networks" },
-                    { dept: "DJB (Delhi Jal Board)", color: "var(--metro-green)", desc: "Sewage systems, Water leaks, Water supply" },
-                    { dept: "Delhi Traffic Police", color: "var(--metro-yellow)", desc: "Traffic signals, Illegal parking enforcement" },
-                    { dept: "DTL / DISCOM (Tata Power/BSES)", color: "var(--metro-red)", desc: "Transformers, Power cuts, Electrical wires" }
-                  ].map((item, index) => {
-                    const deptComplaints = complaints.filter(c => c.department.startsWith(item.dept.split(" ")[0]));
-                    const deptTotal = deptComplaints.length;
-                    const deptResolved = deptComplaints.filter(c => c.status === "Resolved").length;
-                    const pctResolved = deptTotal > 0 ? Math.round((deptResolved / deptTotal) * 100) : 0;
-
-                    return (
-                      <div key={index} style={{ padding: "12px", background: "rgba(0,0,0,0.15)", borderRadius: "8px", border: "1px solid var(--border-glass)" }}>
-                        <div style={{ display: "flex", justifycontent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontWeight: "600", fontSize: "13px" }}>{item.dept}</span>
-                          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{deptResolved}/{deptTotal} Resolved</span>
-                        </div>
-                        <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "8px" }}>{item.desc}</p>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div className="priority-meter-bar" style={{ flexGrow: 1, height: "4px" }}>
-                            <div className="priority-meter-fill" style={{ width: `${pctResolved}%`, "--fill-color": item.color }} />
-                          </div>
-                          <span style={{ fontSize: "11px", fontWeight: "700", width: "30px", textAlign: "right" }}>{pctResolved}%</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <button 
+                type="button" 
+                onClick={() => setAnalyticsView("local")}
+                style={{ 
+                  background: analyticsView === "local" ? "var(--elastic-blue)" : "var(--bg-card)",
+                  color: analyticsView === "local" ? "#ffffff" : "var(--text-primary)",
+                  border: "1px solid var(--border-glass)",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  fontSize: "12.5px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.2s"
+                }}
+              >
+                📈 Category &amp; Agency Logs
+              </button>
             </div>
+
+            {/* View Render Router */}
+            {analyticsView === "kibana" && (
+              <div className="glass-card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "var(--elastic-navy)" }}>📊 Live Kibana Integration Dashboard</h3>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "12.5px", color: "var(--text-secondary)" }}>Consolidated charts powered by live Elasticsearch data sync</p>
+                  </div>
+                  <span style={{ fontSize: "11px", background: "rgba(0,107,180,0.1)", color: "var(--elastic-blue)", padding: "4px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                    Primary Database: MongoDB (Source of Truth)
+                  </span>
+                </div>
+
+                {kibanaConfig.kibanaDashboardUrl ? (
+                  <iframe 
+                    src={kibanaConfig.kibanaDashboardUrl}
+                    style={{ width: "100%", height: "650px", border: "1px solid var(--border-glass)", borderRadius: "12px", background: "#f8fafc" }}
+                    title="Live Kibana Analytical Dashboard"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div style={{ padding: "60px 20px", textAlign: "center", border: "2px dashed var(--border-glass)", borderRadius: "12px", background: "#f8fafc" }}>
+                    <span style={{ fontSize: "40px", display: "block", marginBottom: "12px" }}>📊</span>
+                    <h4 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "700", color: "var(--elastic-navy)" }}>Kibana Dashboard URL Not Configured</h4>
+                    <p style={{ margin: "0 auto 20px auto", maxWidth: "500px", fontSize: "13px", color: "var(--text-secondary)", lineHeight: "1.5" }}>
+                      Please configure your <strong>KIBANA_DASHBOARD_URL</strong> inside the <strong><code>backend/.env</code></strong> file. Once specified, the live embedded charts will display automatically.
+                    </p>
+                    <div style={{ display: "inline-block", background: "#ffffff", padding: "10px 16px", border: "1px solid var(--border-glass)", borderRadius: "8px", textAlign: "left", fontSize: "12px", fontFamily: "monospace" }}>
+                      # Add to backend/.env:<br/>
+                      KIBANA_DASHBOARD_URL=https://your-kibana-deployment.cloud.es.io/...
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {analyticsView === "heatmap" && (
+              <div className="glass-card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "var(--elastic-navy)" }}>🗺️ Public Proximity Hotspot Heat Map</h3>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "12.5px", color: "var(--text-secondary)" }}>Spatial density map of resolved and pending complaints across Delhi</p>
+                  </div>
+                  <span style={{ fontSize: "11px", background: "rgba(0,191,179,0.1)", color: "var(--elastic-teal)", padding: "4px 8px", borderRadius: "6px", fontWeight: "700" }}>
+                    Powered by Elasticsearch geo_point index mapping
+                  </span>
+                </div>
+
+                {kibanaConfig.kibanaMapsUrl ? (
+                  <iframe 
+                    src={kibanaConfig.kibanaMapsUrl}
+                    style={{ width: "100%", height: "650px", border: "1px solid var(--border-glass)", borderRadius: "12px", background: "#f8fafc" }}
+                    title="Delhi Civic Service Navigator Proximity Heat Map"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div style={{ padding: "60px 20px", textAlign: "center", border: "2px dashed var(--border-glass)", borderRadius: "12px", background: "#f8fafc" }}>
+                    <span style={{ fontSize: "40px", display: "block", marginBottom: "12px" }}>🗺️</span>
+                    <h4 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "700", color: "var(--elastic-navy)" }}>Kibana Maps URL Not Configured</h4>
+                    <p style={{ margin: "0 auto 20px auto", maxWidth: "500px", fontSize: "13px", color: "var(--text-secondary)", lineHeight: "1.5" }}>
+                      Please configure your <strong>KIBANA_MAPS_URL</strong> inside the <strong><code>backend/.env</code></strong> file. Once specified, the live embedded Delhi hotspot density map will display automatically.
+                    </p>
+                    <div style={{ display: "inline-block", background: "#ffffff", padding: "10px 16px", border: "1px solid var(--border-glass)", borderRadius: "8px", textAlign: "left", fontSize: "12px", fontFamily: "monospace" }}>
+                      # Add to backend/.env:<br/>
+                      KIBANA_MAPS_URL=https://your-kibana-maps-url.cloud.es.io/...
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {analyticsView === "local" && (
+              <div className="portal-grid">
+                {/* Chart Column */}
+                <div className="glass-card">
+                  <h3 className="drawer-section-title" style={{ fontSize: "16px", marginBottom: "20px" }}>
+                    Active Issues distribution by Civic Category
+                  </h3>
+                  <div className="chart-container">
+                    {CATEGORIES.map(cat => {
+                      const count = categoryCounts[cat] || 0;
+                      const heightPercent = Math.max(5, (count / maxCategoryCount) * 100);
+                      
+                      return (
+                        <div key={cat} className="chart-bar" style={{ height: `${heightPercent}%` }}>
+                          <span className="chart-bar-hover-val">{count}</span>
+                          <div 
+                            className="chart-label" 
+                            style={{ 
+                              position: "absolute", 
+                              bottom: "-25px", 
+                              left: "50%", 
+                              transform: "translateX(-50%) rotate(45deg)", 
+                              transformOrigin: "left top",
+                              whiteSpace: "nowrap",
+                              fontSize: "8.5px"
+                            }}
+                          >
+                            {cat}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ height: "60px" }} />
+                </div>
+
+                {/* Department Statistics Summary */}
+                <div className="glass-card">
+                  <h3 className="drawer-section-title" style={{ fontSize: "16px", marginBottom: "20px" }}>
+                    Delhi Government Agency Performance Logs
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {[
+                      { dept: "MCD (Municipal Corporation of Delhi)", color: "var(--metro-magenta)", desc: "Waste collection, Street lights, Encroachment, Toilets" },
+                      { dept: "PWD (Public Works Department)", color: "var(--metro-blue)", desc: "Road repair, Drainage networks" },
+                      { dept: "DJB (Delhi Jal Board)", color: "var(--metro-green)", desc: "Sewage systems, Water leaks, Water supply" },
+                      { dept: "Delhi Traffic Police", color: "var(--metro-yellow)", desc: "Traffic signals, Illegal parking enforcement" },
+                      { dept: "DTL / DISCOM (Tata Power/BSES)", color: "var(--metro-red)", desc: "Transformers, Power cuts, Electrical wires" }
+                    ].map((item, index) => {
+                      const deptComplaints = complaints.filter(c => c.department.startsWith(item.dept.split(" ")[0]));
+                      const deptTotal = deptComplaints.length;
+                      const deptResolved = deptComplaints.filter(c => c.status === "Resolved").length;
+                      const pctResolved = deptTotal > 0 ? Math.round((deptResolved / deptTotal) * 100) : 0;
+
+                      return (
+                        <div key={index} style={{ padding: "12px", background: "rgba(0,0,0,0.02)", borderRadius: "8px", border: "1px solid var(--border-glass)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                            <span style={{ fontWeight: "600", fontSize: "13px" }}>{item.dept}</span>
+                            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{deptResolved}/{deptTotal} Resolved</span>
+                          </div>
+                          <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "8px" }}>{item.desc}</p>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div className="priority-meter-bar" style={{ flexGrow: 1, height: "4px" }}>
+                              <div className="priority-meter-fill" style={{ width: `${pctResolved}%`, "--fill-color": item.color }} />
+                            </div>
+                            <span style={{ fontSize: "11px", fontWeight: "700", width: "30px", textAlign: "right" }}>{pctResolved}%</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

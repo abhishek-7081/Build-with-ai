@@ -80,6 +80,27 @@ const DEPARTMENTS = [
   }
 ];
 
+function getCategoryPlaceholderIcon(category) {
+  switch (category) {
+    case "Road Damage": return "🛣️";
+    case "Garbage Collection": return "🗑️";
+    case "Water Supply": return "🚰";
+    case "Water Leakage": return "💧";
+    case "Sewage Problems": return "🤢";
+    case "Street Lights": return "💡";
+    case "Electricity": return "⚡";
+    case "Public Transport": return "🚌";
+    case "Traffic Signals": return "🚦";
+    case "Illegal Parking": return "🚗";
+    case "Encroachment": return "🏪";
+    case "Air Pollution": return "🌫️";
+    case "Tree Fallen": return "🌳";
+    case "Drainage": return "🕳️";
+    case "Public Toilets": return "🚻";
+    default: return "🏛️";
+  }
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState("portal"); // portal, dashboard, analytics
   const [complaints, setComplaints] = useState([]);
@@ -118,6 +139,13 @@ function App() {
   const [imagePreview, setImagePreview] = useState(null);
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [submitResult, setSubmitResult] = useState(null);
+
+  // Nearby Complaints and Community support interaction states
+  const [expandedNearbyId, setExpandedNearbyId] = useState(null);
+  const [nearbyComments, setNearbyComments] = useState({});
+  const [newCommentText, setNewCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [supportingId, setSupportingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Geolocation Coordinate State (Center of Delhi defaults)
@@ -508,6 +536,86 @@ function App() {
     }
   };
 
+  // Toggle nearby complaints inspection drawer & fetch comments
+  const handleToggleExpandNearby = async (compId) => {
+    if (expandedNearbyId === compId) {
+      setExpandedNearbyId(null);
+    } else {
+      setExpandedNearbyId(compId);
+      try {
+        const res = await fetch(`${API_URL}/complaints/${compId}/comments`);
+        if (res.ok) {
+          const data = await res.json();
+          setNearbyComments(prev => ({ ...prev, [compId]: data }));
+        }
+      } catch (err) {
+        console.error("Failed to load comments for nearby issue:", err);
+      }
+    }
+  };
+
+  // Post comment on nearby complaint
+  const handleAddNearbyComment = async (e, compId) => {
+    e.preventDefault();
+    if (!newCommentText.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const res = await fetch(`${API_URL}/complaints/${compId}/comments`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ commentText: newCommentText })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNearbyComments(prev => ({ ...prev, [compId]: data.comments }));
+        setNewCommentText("");
+        fetchComplaints(); // Sync main complaints list
+      }
+    } catch (err) {
+      console.error("Failed to post comment:", err);
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  // Support/Upvote a nearby complaint to raise priority
+  const handleSupportNearby = async (compId) => {
+    setSupportingId(compId);
+    try {
+      const res = await fetch(`${API_URL}/complaints/${compId}/support`, {
+        method: "POST",
+        headers: {
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(data.message);
+        await fetchComplaints(); // Refresh main lists & maps
+        
+        // Fetch updated comments list to display the auto-injected support comment immediately
+        try {
+          const commentRes = await fetch(`${API_URL}/complaints/${compId}/comments`);
+          if (commentRes.ok) {
+            const commentData = await commentRes.json();
+            setNearbyComments(prev => ({ ...prev, [compId]: commentData }));
+          }
+        } catch (e) {
+          console.warn("Failed to refresh comments after upvote:", e);
+        }
+      } else {
+        alert(data.error || "Failed to submit support.");
+      }
+    } catch (err) {
+      console.error("Error upvoting issue:", err);
+    } finally {
+      setSupportingId(null);
+    }
+  };
+
   // Reset reporting form
   const resetForm = () => {
     setDescription("");
@@ -659,6 +767,14 @@ function App() {
   }, {});
 
   const maxCategoryCount = Math.max(...Object.values(categoryCounts), 1);
+
+  const nearbyComplaints = complaints.filter(comp => {
+    if (!comp.locationCoords || !comp.locationCoords.lat || !comp.locationCoords.lng) return false;
+    if (comp.status === "Resolved") return false; // Focus only on active/unresolved issues
+    const latDiff = Math.abs(comp.locationCoords.lat - latitude);
+    const lngDiff = Math.abs(comp.locationCoords.lng - longitude);
+    return latDiff < 0.015 && lngDiff < 0.015; // ~1.5km radius
+  });
 
   return (
     <div className="app-container">
@@ -1002,127 +1118,290 @@ function App() {
                     )}
                   </div>
 
-                  {/* Tracking Status Timeline Board */}
-                  <div className="glass-card track-section">
-                    <h2 className="drawer-section-title" style={{ fontSize: "18px", borderLeftColor: "var(--metro-yellow)" }}>
-                      Track Complaint Status
-                    </h2>
+                  {/* Right Column: Track Status & Nearby Reports */}
+                  <div className="portal-right-column" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                     
-                    <form onSubmit={handleTrackComplaint} className="search-input-group">
-                      <input 
-                        type="text" 
-                        placeholder="Enter Reference Complaint ID (e.g. comp_1)" 
-                        value={trackingId}
-                        onChange={(e) => setTrackingId(e.target.value)}
-                        required
-                      />
-                      <button type="submit" className="btn-secondary" disabled={trackingLoading}>
-                        {trackingLoading ? "Searching..." : "Track"}
-                      </button>
-                    </form>
+                    {/* Tracking Status Timeline Board */}
+                    <div className="glass-card track-section" style={{ height: "fit-content" }}>
+                      <h2 className="drawer-section-title" style={{ fontSize: "18px", borderLeftColor: "var(--metro-yellow)", marginBottom: "16px" }}>
+                        Track Complaint Status
+                      </h2>
+                      
+                      <form onSubmit={handleTrackComplaint} className="search-input-group">
+                        <input 
+                          type="text" 
+                          placeholder="Enter Reference ID (e.g. 66a...)" 
+                          value={trackingId}
+                          onChange={(e) => setTrackingId(e.target.value)}
+                          required
+                        />
+                        <button type="submit" className="btn-secondary" disabled={trackingLoading}>
+                          {trackingLoading ? "Searching..." : "Track"}
+                        </button>
+                      </form>
 
-                    {trackingError && (
-                      <p style={{ color: "var(--metro-red)", fontSize: "13px" }}>
-                        ⚠️ {trackingError}
-                      </p>
-                    )}
+                      {trackingError && (
+                        <p style={{ color: "var(--metro-red)", fontSize: "13px", marginTop: "8px" }}>
+                          ⚠️ {trackingError}
+                        </p>
+                      )}
 
-                    {trackedComplaint && (
-                      <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "20px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
+                      {trackedComplaint && (
+                        <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
+                            <div>
+                              <h3 style={{ fontSize: "16px", fontWeight: "600" }}>{trackedComplaint.title}</h3>
+                              <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>📍 Coordinates: {trackedComplaint.locationCoords?.lat}, {trackedComplaint.locationCoords?.lng}</p>
+                            </div>
+                            <span className={`badge badge-${(trackedComplaint.status || "Pending").toLowerCase().replace(" ", "")}`}>
+                              {trackedComplaint.status || "Pending"}
+                            </span>
+                          </div>
+
+                          {/* Status Timeline */}
+                          <div className="timeline">
+                            <div 
+                              className="timeline-progress" 
+                              style={{ 
+                                width: 
+                                  trackedComplaint.status === "Pending" ? "0%" :
+                                  trackedComplaint.status === "In Progress" ? "50%" : "100%" 
+                              }} 
+                            />
+                            
+                            <div className="timeline-step completed">
+                              <div className="timeline-node">1</div>
+                              <span className="timeline-label">Submitted</span>
+                            </div>
+                            <div className={`timeline-step ${trackedComplaint.status !== "Pending" ? "completed" : "active"}`}>
+                              <div className="timeline-node">2</div>
+                              <span className="timeline-label">Assigned</span>
+                            </div>
+                            <div className={`timeline-step ${trackedComplaint.status === "Resolved" ? "completed" : trackedComplaint.status === "In Progress" ? "active" : ""}`}>
+                              <div className="timeline-node">3</div>
+                              <span className="timeline-label">In Progress</span>
+                            </div>
+                            <div className={`timeline-step ${trackedComplaint.status === "Resolved" ? "completed" : ""}`}>
+                              <div className="timeline-node">4</div>
+                              <span className="timeline-label">Resolved</span>
+                            </div>
+                          </div>
+
+                          {/* Detailed information box */}
+                          <div style={{ padding: "16px", background: "rgba(0,0,0,0.02)", borderRadius: "12px", border: "1px solid var(--border-glass)" }}>
+                            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                              <strong>Department Assigned:</strong> {trackedComplaint.department}
+                            </p>
+                            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                              <strong>Priority Level:</strong> <span style={{ color: `var(--priority-${(trackedComplaint.priorityLevel || "Medium").toLowerCase()})`, fontWeight: "600" }}>{trackedComplaint.priorityLevel || "Medium"}</span>
+                            </p>
+                            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                              <strong>Total Reports:</strong> {trackedComplaint.reportCount} citizen submissions consolidated
+                            </p>
+                            <p style={{ fontSize: "13px", color: "var(--text-secondary)", fontStyle: "italic", marginTop: "12px", borderTop: "1px solid var(--border-glass)", paddingTop: "10px" }}>
+                              "{trackedComplaint.description}"
+                            </p>
+                          </div>
+
+                          {/* History Log Timeline */}
                           <div>
-                            <h3 style={{ fontSize: "16px", fontWeight: "600" }}>{trackedComplaint.title}</h3>
-                            <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>📍 Coordinates: {trackedComplaint.locationCoords?.lat}, {trackedComplaint.locationCoords?.lng}</p>
-                          </div>
-                          <span className={`badge badge-${(trackedComplaint.status || "Pending").toLowerCase().replace(" ", "")}`}>
-                            {trackedComplaint.status || "Pending"}
-                          </span>
-                        </div>
-
-                        {/* Status Timeline */}
-                        <div className="timeline">
-                          <div 
-                            className="timeline-progress" 
-                            style={{ 
-                              width: 
-                                trackedComplaint.status === "Pending" ? "0%" :
-                                trackedComplaint.status === "In Progress" ? "50%" : "100%" 
-                            }} 
-                          />
-                          
-                          <div className="timeline-step completed">
-                            <div className="timeline-node">1</div>
-                            <span className="timeline-label">Submitted</span>
-                          </div>
-                          <div className={`timeline-step ${trackedComplaint.status !== "Pending" ? "completed" : "active"}`}>
-                            <div className="timeline-node">2</div>
-                            <span className="timeline-label">Assigned</span>
-                          </div>
-                          <div className={`timeline-step ${trackedComplaint.status === "Resolved" ? "completed" : trackedComplaint.status === "In Progress" ? "active" : ""}`}>
-                            <div className="timeline-node">3</div>
-                            <span className="timeline-label">In Progress</span>
-                          </div>
-                          <div className={`timeline-step ${trackedComplaint.status === "Resolved" ? "completed" : ""}`}>
-                            <div className="timeline-node">4</div>
-                            <span className="timeline-label">Resolved</span>
-                          </div>
-                        </div>
-
-                        {/* Detailed information box */}
-                        <div style={{ padding: "16px", background: "rgba(0,0,0,0.15)", borderRadius: "10px", border: "1px solid var(--border-glass)" }}>
-                          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
-                            <strong>Department Assigned:</strong> {trackedComplaint.department}
-                          </p>
-                          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
-                            <strong>Priority Level:</strong> <span style={{ color: `var(--priority-${(trackedComplaint.priorityLevel || "Medium").toLowerCase()})`, fontWeight: "600" }}>{trackedComplaint.priorityLevel || "Medium"}</span>
-                          </p>
-                          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
-                            <strong>Total Reports:</strong> {trackedComplaint.reportCount} citizen submissions consolidated
-                          </p>
-                          <p style={{ fontSize: "13px", color: "var(--text-secondary)", fontStyle: "italic", marginTop: "12px", borderTop: "1px solid var(--border-glass)", paddingTop: "10px" }}>
-                            "{trackedComplaint.description}"
-                          </p>
-                        </div>
-
-                        {/* History Log Timeline */}
-                        <div>
-                          <h4 style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-secondary)", marginBottom: "10px" }}>Timeline &amp; Audit Trail</h4>
-                          <div className="history-timeline">
-                            {trackedComplaint.history && trackedComplaint.history.map((log, index) => {
-                              let dotColor = "var(--text-muted)";
-                              if (log.status === "In Progress") dotColor = "var(--metro-blue)";
-                              if (log.status === "Resolved") dotColor = "var(--metro-green)";
-                              
-                              return (
-                                <div key={index} className="history-item" style={{ "--dot-color": dotColor }}>
-                                  <div className="history-time">{new Date(log.timestamp).toLocaleString()}</div>
-                                  <div className="history-desc">
-                                    <strong>Status: {log.status}</strong> - {log.note}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Supporting Photos */}
-                        {trackedComplaint.images && trackedComplaint.images.length > 0 && (
-                          <div>
-                            <h4 style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-secondary)", marginBottom: "10px" }}>Photos uploaded ({trackedComplaint.images.length})</h4>
-                            <div className="photo-gallery">
-                              {trackedComplaint.images.map((img, i) => {
-                                const imgSrc = img.startsWith("http") ? img : `${MEDIA_URL}/${img}`;
+                            <h4 style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-secondary)", marginBottom: "10px" }}>Timeline &amp; Audit Trail</h4>
+                            <div className="history-timeline">
+                              {trackedComplaint.history && trackedComplaint.history.map((log, index) => {
+                                let dotColor = "var(--text-muted)";
+                                if (log.status === "In Progress") dotColor = "var(--elastic-blue)";
+                                if (log.status === "Resolved") dotColor = "var(--elastic-teal)";
+                                
                                 return (
-                                  <div key={i} className="gallery-photo-wrapper" onClick={() => setModalImage(imgSrc)}>
-                                    <img src={imgSrc} className="gallery-photo" alt="evidence" />
+                                  <div key={index} className="history-item" style={{ "--dot-color": dotColor }}>
+                                    <div className="history-time">{new Date(log.timestamp).toLocaleString()}</div>
+                                    <div className="history-desc">
+                                      <strong>Status: {log.status}</strong> - {log.note}
+                                    </div>
                                   </div>
                                 );
                               })}
                             </div>
                           </div>
-                        )}
-                      </div>
-                    )}
+
+                          {/* Supporting Photos */}
+                          {trackedComplaint.images && trackedComplaint.images.length > 0 && (
+                            <div>
+                              <h4 style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-secondary)", marginBottom: "10px" }}>Photos uploaded ({trackedComplaint.images.length})</h4>
+                              <div className="photo-gallery">
+                                {trackedComplaint.images.map((img, i) => {
+                                  const imgSrc = img.startsWith("http") ? img : `${MEDIA_URL}/${img}`;
+                                  return (
+                                    <div key={i} className="gallery-photo-wrapper" onClick={() => setModalImage(imgSrc)}>
+                                      <img src={imgSrc} className="gallery-photo" alt="evidence" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Existing Reports in this Area Card Panel */}
+                    <div className="glass-card nearby-section" style={{ height: "fit-content" }}>
+                      <h2 className="drawer-section-title" style={{ fontSize: "18px", borderLeftColor: "var(--elastic-blue)", marginBottom: "16px" }}>
+                        📍 Existing Reports in this Area ({nearbyComplaints.length})
+                      </h2>
+                      
+                      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "16px", lineHeight: "1.4" }}>
+                        Select a location pin on the map to show existing civic issues reported within a 1.5 km area. You can support/upvote active issues to boost their priority instead of filing a duplicate report.
+                      </p>
+
+                      {nearbyComplaints.length === 0 ? (
+                        <div style={{ padding: "24px 16px", textAlign: "center", border: "1px dashed var(--border-glass)", borderRadius: "12px", background: "rgba(0,0,0,0.01)" }}>
+                          <span style={{ fontSize: "28px", display: "block", marginBottom: "8px" }}>🌱</span>
+                          <span style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                            No active complaints registered within 1.5 km of this pin. Your report will map a new issue site.
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "600px", overflowY: "auto", paddingRight: "4px" }}>
+                          {nearbyComplaints.map(comp => {
+                            const isExpanded = expandedNearbyId === comp._id || expandedNearbyId === comp.id;
+                            const compId = comp._id || comp.id;
+                            const commentsList = nearbyComments[compId] || comp.comments || [];
+                            
+                            return (
+                              <div key={compId} className="nearby-report-card" style={{ background: "#ffffff", border: "1px solid var(--border-glass)", borderRadius: "16px", overflow: "hidden", boxShadow: "var(--shadow-card)", transition: "all 0.2s" }}>
+                                
+                                {/* Image / Category Placeholder */}
+                                <div style={{ height: "140px", width: "100%", position: "relative", background: "#f8fafc", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {comp.images && comp.images.length > 0 ? (
+                                    <img 
+                                      src={comp.images[0].startsWith("http") ? comp.images[0] : `${MEDIA_URL}/${comp.images[0]}`} 
+                                      alt={comp.title} 
+                                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    />
+                                  ) : (
+                                    <div style={{ fontSize: "48px" }}>
+                                      {getCategoryPlaceholderIcon(comp.category)}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Status badge */}
+                                  <span className={`badge badge-${(comp.status || "Pending").toLowerCase().replace(" ", "")}`} style={{ position: "absolute", top: "12px", right: "12px", fontSize: "10px", padding: "4px 8px", fontWeight: "700", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+                                    {comp.status}
+                                  </span>
+                                </div>
+
+                                {/* Content block */}
+                                <div style={{ padding: "16px" }}>
+                                  <h4 style={{ fontWeight: "700", fontSize: "14px", color: "var(--elastic-navy)", margin: "0 0 6px 0", lineHeight: "1.3" }}>
+                                    {comp.title}
+                                  </h4>
+                                  
+                                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
+                                    <span style={{ fontSize: "10px", background: "#f1f5f9", color: "var(--text-secondary)", padding: "2px 6px", borderRadius: "4px", fontWeight: "600" }}>
+                                      {comp.category}
+                                    </span>
+                                    <span style={{ fontSize: "10px", background: `var(--priority-${(comp.priorityLevel || "Medium").toLowerCase()})`, color: "white", padding: "2px 6px", borderRadius: "4px", fontWeight: "700" }}>
+                                      {comp.priorityLevel} Priority
+                                    </span>
+                                  </div>
+
+                                  <p style={{ fontSize: "12.5px", color: "var(--text-secondary)", margin: "0 0 12px 0", lineHeight: "1.4", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: "2", WebkitBoxOrient: "vertical" }}>
+                                    {comp.description}
+                                  </p>
+
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11.5px", color: "var(--text-muted)", marginBottom: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                                    <div>📍 <strong>Location:</strong> {comp.location}</div>
+                                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                      <span>📅 <strong>Reported:</strong> {new Date(comp.createdAt).toLocaleDateString()}</span>
+                                      <span>👍 <strong>Reports:</strong> {comp.reportCount}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Interaction Buttons */}
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button 
+                                      type="button" 
+                                      className="btn-secondary" 
+                                      onClick={() => handleToggleExpandNearby(compId)} 
+                                      style={{ flexGrow: 1, padding: "8px", fontSize: "11.5px", height: "34px" }}
+                                    >
+                                      {isExpanded ? "Collapse Details" : "View Full Details"}
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {/* Expanded Details Drawer Inside Card */}
+                                {isExpanded && (
+                                  <div style={{ padding: "16px", borderTop: "1px solid var(--border-glass)", background: "#fafafa", animation: "fadeIn 0.2s" }}>
+                                    
+                                    {/* Support Button */}
+                                    <div style={{ marginBottom: "14px" }}>
+                                      <button 
+                                        type="button" 
+                                        className="btn-primary" 
+                                        onClick={() => handleSupportNearby(compId)}
+                                        disabled={supportingId === compId}
+                                        style={{ width: "100%", padding: "10px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                                      >
+                                        <span>👍</span> {supportingId === compId ? "Upvoting..." : "Support / Upvote this Report"}
+                                      </button>
+                                    </div>
+
+                                    {/* Discussion Comments */}
+                                    <div style={{ background: "#ffffff", padding: "12px", borderRadius: "12px", border: "1px solid var(--border-glass)" }}>
+                                      <h5 style={{ fontSize: "11.5px", fontWeight: "700", marginBottom: "8px", color: "var(--elastic-navy)", display: "flex", justifyContent: "space-between" }}>
+                                        <span>💬 Citizens Chat</span>
+                                        <span style={{ color: "var(--text-muted)" }}>({commentsList.length})</span>
+                                      </h5>
+                                      
+                                      {commentsList.length === 0 ? (
+                                        <p style={{ fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic", marginBottom: "10px" }}>
+                                          No comments registered yet. Be the first to comment!
+                                        </p>
+                                      ) : (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "120px", overflowY: "auto", marginBottom: "10px", paddingRight: "4px" }}>
+                                          {commentsList.map((comm, idx) => (
+                                            <div key={idx} style={{ fontSize: "11px", background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", border: "1px solid var(--border-glass)" }}>
+                                              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "10px", marginBottom: "2px" }}>
+                                                <strong>{comm.userName}</strong>
+                                                <span>{new Date(comm.createdAt).toLocaleDateString()}</span>
+                                              </div>
+                                              <span style={{ color: "var(--text-secondary)" }}>{comm.commentText}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Add comment Form */}
+                                      <form onSubmit={(e) => handleAddNearbyComment(e, compId)} style={{ display: "flex", gap: "8px" }}>
+                                        <input 
+                                          type="text" 
+                                          placeholder="Add community update or query..." 
+                                          value={newCommentText}
+                                          onChange={(e) => setNewCommentText(e.target.value)}
+                                          style={{ flexGrow: 1, padding: "6px 10px", fontSize: "11px", height: "32px", background: "#f8fafc", border: "1px solid var(--border-glass)", borderRadius: "6px", color: "var(--text-primary)" }}
+                                          required
+                                        />
+                                        <button 
+                                          type="submit" 
+                                          className="btn-secondary" 
+                                          disabled={submittingComment}
+                                          style={{ height: "32px", padding: "0 12px", fontSize: "11px" }}
+                                        >
+                                          Post
+                                        </button>
+                                      </form>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               )}

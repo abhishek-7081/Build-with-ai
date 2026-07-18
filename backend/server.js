@@ -502,6 +502,138 @@ app.post("/api/analyze-test", (req, res) => {
   }
 });
 
+// 3. Comments and Community Support Endpoints
+
+// Upvote/Support a complaint to increase priority
+app.post("/api/complaints/:id/support", optionalAuthenticateToken, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ error: "Complaint not found." });
+    }
+
+    // Require authentication to prevent multiple votes
+    const supporterId = req.userId;
+    if (!supporterId) {
+      return res.status(401).json({ error: "Please sign in to support and upvote civic issues." });
+    }
+
+    const supporterName = req.userName || "Citizen";
+    const supporterPhone = req.userPhone || "Not provided";
+
+    // Deduplicate: check if this user has already reported or upvoted this complaint
+    const alreadySupported = complaint.reports.some(
+      (rep) => rep.userId && rep.userId.toString() === supporterId.toString()
+    );
+
+    if (alreadySupported) {
+      return res.status(400).json({ error: "You have already registered your support for this issue." });
+    }
+
+    // Add support log as report subdocument
+    const newReport = {
+      userId: supporterId,
+      userName: supporterName,
+      userPhone: supporterPhone,
+      description: "Supported this existing report to escalate community priority.",
+      image: null,
+      createdAt: new Date()
+    };
+
+    complaint.reports.push(newReport);
+    complaint.reportCount = complaint.reports.length;
+
+    // Automatically post a comment on behalf of the user in the comments section
+    const supportComment = {
+      userId: supporterId,
+      userName: supporterName,
+      commentText: "📢 Supported this civic issue to escalate priority.",
+      createdAt: new Date()
+    };
+    complaint.comments.push(supportComment);
+
+    // Recalculate priority (factors in new reportCount and nearby hotspot congestion scores)
+    const score = await calculatePriorityScore(
+      complaint.severity,
+      complaint.reportCount,
+      complaint.createdAt,
+      complaint.description,
+      complaint.locationCoords,
+      complaint._id
+    );
+    complaint.priority = score;
+    complaint.priorityLevel = getPriorityLevel(score);
+    complaint.updatedAt = new Date();
+
+    complaint.history.push({
+      status: complaint.status,
+      timestamp: new Date(),
+      note: `Received upvote/support from citizen (${supporterName}). Total reports: ${complaint.reportCount}. Escalated priority to ${complaint.priorityLevel}.`
+    });
+
+    const saved = await complaint.save();
+    
+    res.json({
+      success: true,
+      message: "Thank you for supporting this issue! Its community priority score has been elevated.",
+      complaint: { ...saved.toObject(), id: saved._id }
+    });
+  } catch (error) {
+    console.error("Support escalation failed:", error);
+    res.status(500).json({ error: "Failed to upvote/support complaint." });
+  }
+});
+
+// Add comment to a complaint
+app.post("/api/complaints/:id/comments", optionalAuthenticateToken, async (req, res) => {
+  try {
+    const { commentText } = req.body;
+    if (!commentText || commentText.trim() === "") {
+      return res.status(400).json({ error: "Comment text is required." });
+    }
+
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ error: "Complaint not found." });
+    }
+
+    const commenterId = req.userId || null;
+    const commenterName = req.userName || req.body.userName || "Anonymous Citizen";
+
+    const newComment = {
+      userId: commenterId,
+      userName: commenterName,
+      commentText: commentText.trim(),
+      createdAt: new Date()
+    };
+
+    complaint.comments.push(newComment);
+    const saved = await complaint.save();
+
+    res.json({
+      success: true,
+      message: "Comment posted successfully.",
+      comments: saved.comments
+    });
+  } catch (error) {
+    console.error("Failed to add comment:", error);
+    res.status(500).json({ error: "Failed to post comment." });
+  }
+});
+
+// Get comments for a complaint
+app.get("/api/complaints/:id/comments", async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ error: "Complaint not found." });
+    }
+    res.json(complaint.comments || []);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to load comments." });
+  }
+});
+
 // Start API Server
 app.listen(PORT, () => {
   console.log(`Delhi Civic Service Navigator Backend listening on port ${PORT}`);

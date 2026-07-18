@@ -1,44 +1,50 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* HSL Color Palette */
-  --bg-dark: hsl(222, 47%, 9%);
-  --bg-card: hsla(222, 47%, 14%, 0.6);
-  --bg-card-hover: hsla(222, 47%, 18%, 0.85);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glass-focus: rgba(255, 255, 255, 0.2);
+  /* Elastic Branding Palette */
+  --elastic-navy: #0F172A;
+  --elastic-blue: #006BB4;
+  --elastic-teal: #00BFB3;
+  --elastic-yellow: #F5A700;
   
-  /* Accent Colors (Delhi Metro Line Inspirations) */
-  --metro-yellow: hsl(45, 100%, 50%);
-  --metro-blue: hsl(207, 95%, 55%);
-  --metro-violet: hsl(271, 76%, 60%);
-  --metro-red: hsl(0, 84%, 60%);
-  --metro-green: hsl(142, 70%, 50%);
-  --metro-magenta: hsl(329, 86%, 56%);
+  --bg-dark: var(--elastic-navy);
+  --bg-light: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --border-glass: #e2e8f0;
+  --border-glass-focus: #94a3b8;
+  
+  /* Accent Colors mapped to Elastic Branding */
+  --metro-yellow: var(--elastic-yellow);
+  --metro-blue: var(--elastic-blue);
+  --metro-violet: #6366f1;
+  --metro-red: #ef4444;
+  --metro-green: var(--elastic-teal);
+  --metro-magenta: #ec4899;
 
   /* Text colors */
-  --text-primary: hsl(210, 40%, 98%);
-  --text-secondary: hsl(215, 20%, 75%);
-  --text-muted: hsl(215, 16%, 50%);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
 
   /* Priority Levels */
-  --priority-low: var(--metro-green);
-  --priority-medium: var(--metro-yellow);
-  --priority-high: var(--metro-magenta);
-  --priority-critical: var(--metro-red);
+  --priority-low: var(--elastic-teal);
+  --priority-medium: var(--elastic-yellow);
+  --priority-high: #f97316;
+  --priority-critical: #ef4444;
 
   /* Status Colors */
-  --status-pending: hsl(28, 90%, 55%);
-  --status-inprogress: var(--metro-blue);
-  --status-resolved: var(--metro-green);
+  --status-pending: var(--elastic-yellow);
+  --status-inprogress: var(--elastic-blue);
+  --status-resolved: var(--elastic-teal);
 
   /* Font Families */
   --font-display: 'Outfit', sans-serif;
   --font-sans: 'Inter', sans-serif;
   
   /* Shadow tokens */
-  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
-  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 4px 20px rgba(0, 107, 180, 0.08);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   
   /* Transitions */
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -52,16 +58,11 @@
 }
 
 body {
-  background-color: var(--bg-dark);
+  background-color: var(--bg-light);
   color: var(--text-primary);
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(222, 47%, 15%, 0.5) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(207, 95%, 15%, 0.4) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, hsla(271, 76%, 12%, 0.5) 0px, transparent 50%);
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -255,7 +256,7 @@ label {
 }
 
 input, textarea, select {
-  background: rgba(0, 0, 0, 0.2);
+  background: #ffffff;
   border: 1px solid var(--border-glass);
   color: var(--text-primary);
   padding: 12px 16px;
@@ -267,9 +268,9 @@ input, textarea, select {
 
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: var(--metro-blue);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
-  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--elastic-blue);
+  box-shadow: 0 0 10px rgba(0, 107, 180, 0.12);
+  background: #ffffff;
 }
 
 textarea {

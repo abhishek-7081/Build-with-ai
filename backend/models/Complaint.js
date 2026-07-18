@@ -9,6 +9,13 @@ const reportSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const commentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", null: true },
+  userName: { type: String, required: true },
+  commentText: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
 const historySchema = new mongoose.Schema({
   status: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
@@ -33,6 +40,7 @@ const complaintSchema = new mongoose.Schema({
   images: [{ type: String }], // Cloudinary URLs or local filenames
   history: [historySchema],
   reports: [reportSchema],
+  comments: [commentSchema], // Support community discussion comments
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

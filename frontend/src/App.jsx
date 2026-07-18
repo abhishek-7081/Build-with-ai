@@ -22,6 +22,63 @@ const CATEGORIES = [
   "Others"
 ];
 
+const DEPARTMENTS = [
+  {
+    id: "MCD",
+    name: "MCD Portal",
+    fullName: "Municipal Corporation of Delhi",
+    icon: "🧹",
+    color: "var(--metro-magenta)",
+    desc: "Handles garbage collection, street lights, encroachment, and public toilets.",
+    categories: ["Garbage Collection", "Street Lights", "Encroachment", "Public Toilets"]
+  },
+  {
+    id: "PWD",
+    name: "PWD Portal",
+    fullName: "Public Works Department",
+    icon: "🛣️",
+    color: "var(--metro-blue)",
+    desc: "Handles road damage, drainage networks, and major flyovers.",
+    categories: ["Road Damage", "Drainage"]
+  },
+  {
+    id: "DJB",
+    name: "Delhi Jal Board",
+    fullName: "Water & Sewage Management",
+    icon: "💧",
+    color: "var(--metro-green)",
+    desc: "Handles water supply, water leakage, sewer overflow, and drainage blockage.",
+    categories: ["Water Supply", "Water Leakage", "Sewage Problems"]
+  },
+  {
+    id: "Traffic",
+    name: "Delhi Traffic Police",
+    fullName: "Traffic Enforcement Gateway",
+    icon: "🚦",
+    color: "var(--metro-yellow)",
+    desc: "Handles traffic signals, zebra crossings, blinkers, and illegal parking.",
+    categories: ["Traffic Signals", "Illegal Parking"]
+  },
+  {
+    id: "Electricity",
+    name: "Electricity Board",
+    fullName: "DISCOM / Power Grid Gateway",
+    icon: "⚡",
+    color: "var(--metro-red)",
+    desc: "Handles transformers, spark failures, power cuts, and loose electric lines.",
+    categories: ["Electricity"]
+  },
+  {
+    id: "SuperAdmin",
+    name: "Super Admin Gateway",
+    fullName: "Central Civic Command Center",
+    icon: "👑",
+    color: "var(--text-primary)",
+    desc: "Access all complaints across all municipal departments in Delhi.",
+    categories: ["All Categories"]
+  }
+];
+
 function App() {
   const [activeTab, setActiveTab] = useState("portal"); // portal, dashboard, analytics
   const [complaints, setComplaints] = useState([]);
@@ -51,6 +108,7 @@ function App() {
   const [statusNote, setStatusNote] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedDept, setSelectedDept] = useState(null); // null, MCD, PWD, DJB, Traffic, Electricity, SuperAdmin
   
   // Dashboard Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -257,6 +315,17 @@ function App() {
 
   // Filter complaints list
   const filteredComplaints = complaints.filter(comp => {
+    // Scope complaints based on department gateway
+    if (selectedDept && selectedDept !== "SuperAdmin") {
+      let deptMatch = false;
+      if (selectedDept === "MCD") deptMatch = comp.department.includes("MCD");
+      if (selectedDept === "PWD") deptMatch = comp.department.includes("PWD");
+      if (selectedDept === "DJB") deptMatch = comp.department.includes("DJB");
+      if (selectedDept === "Traffic") deptMatch = comp.department.includes("Traffic");
+      if (selectedDept === "Electricity") deptMatch = comp.department.includes("DTL") || comp.department.includes("DISCOM");
+      if (!deptMatch) return false;
+    }
+
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 
       comp.id.toLowerCase().includes(searchLower) ||
@@ -596,7 +665,92 @@ function App() {
 
         {/* --- DEPARTMENT DASHBOARD --- */}
         {activeTab === "dashboard" && (
-          <div>
+          selectedDept === null ? (
+            <div className="dept-select-container">
+              <h2 className="dept-select-title">Select Department Administrative Portal</h2>
+              <p className="dept-select-subtitle">Choose your gateway to view and manage assigned civic issues</p>
+              
+              <div className="dept-grid">
+                {DEPARTMENTS.map(dept => {
+                  // Calculate active count
+                  const deptComplaints = complaints.filter(c => {
+                    if (dept.id === "SuperAdmin") return c.status !== "Resolved";
+                    if (dept.id === "MCD") return c.department.includes("MCD") && c.status !== "Resolved";
+                    if (dept.id === "PWD") return c.department.includes("PWD") && c.status !== "Resolved";
+                    if (dept.id === "DJB") return c.department.includes("DJB") && c.status !== "Resolved";
+                    if (dept.id === "Traffic") return c.department.includes("Traffic") && c.status !== "Resolved";
+                    if (dept.id === "Electricity") return (c.department.includes("DTL") || c.department.includes("DISCOM")) && c.status !== "Resolved";
+                    return false;
+                  });
+                  const activeCount = deptComplaints.length;
+
+                  return (
+                    <div 
+                      key={dept.id} 
+                      className="glass-card dept-card"
+                      style={{ "--dept-color": dept.color }}
+                      onClick={() => {
+                        setSelectedDept(dept.id);
+                        setSelectedComplaint(null); // Clear drawer selection
+                      }}
+                    >
+                      <div className="dept-card-header">
+                        <span className="dept-icon">{dept.icon}</span>
+                        {activeCount > 0 ? (
+                          <span 
+                            className="dept-badge-count" 
+                            style={{ 
+                              background: "rgba(255, 255, 255, 0.05)",
+                              color: dept.color 
+                            }}
+                          >
+                            {activeCount} Active
+                          </span>
+                        ) : (
+                          <span className="dept-badge-count" style={{ fontSize: "11px", color: "var(--text-muted)", background: "rgba(0,0,0,0.1)" }}>0 Active</span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="dept-name">{dept.name}</h3>
+                        <p style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: "500", marginTop: "2px" }}>{dept.fullName}</p>
+                        <p className="dept-desc" style={{ marginTop: "10px" }}>{dept.desc}</p>
+                      </div>
+                      <div className="dept-categories">
+                        <strong>Filters:</strong> {dept.categories.join(", ")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div>
+              {/* Department branding header */}
+              <div className="dept-header-panel">
+                <div className="dept-header-info">
+                  <span style={{ fontSize: "28px" }}>
+                    {DEPARTMENTS.find(d => d.id === selectedDept)?.icon}
+                  </span>
+                  <div>
+                    <h2 className="dept-header-title" style={{ color: DEPARTMENTS.find(d => d.id === selectedDept)?.color }}>
+                      {DEPARTMENTS.find(d => d.id === selectedDept)?.fullName} Gateway
+                    </h2>
+                    <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                      Showing issues assigned to <strong>{DEPARTMENTS.find(d => d.id === selectedDept)?.name}</strong>
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => {
+                    setSelectedDept(null);
+                    setSelectedComplaint(null);
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  ← Exit Department Gateways
+                </button>
+              </div>
             {/* Filter controls */}
             <div className="filter-bar">
               <div className="search-bar">
@@ -894,7 +1048,8 @@ function App() {
               )}
             </div>
           </div>
-        )}
+        )
+      )}
 
         {/* --- LIVE ANALYTICS --- */}
         {activeTab === "analytics" && (

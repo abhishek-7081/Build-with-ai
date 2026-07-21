@@ -327,7 +327,7 @@ app.post("/api/complaints", optionalAuthenticateToken, upload.single("image"), a
             folder: "delhi_civic_navigator"
           });
           imageUri = cloudResult.secure_url;
-          fs.unlinkSync(req.file.path); // Delete local temp copy
+          // fs.unlinkSync(req.file.path); // Delete local temp copy (commented out to keep file in existing folder)
         } catch (uploadError) {
           console.error("Cloudinary upload failed, using local disk fallback:", uploadError);
           imageUri = req.file.filename; // Fallback
@@ -338,7 +338,7 @@ app.post("/api/complaints", optionalAuthenticateToken, upload.single("image"), a
     }
 
     // AI/NLP processing of description
-    const nlpData = analyzeDescription(description);
+    const nlpData = await analyzeDescription(description);
 
     // Apply manual location landmark override if provided
     if (locationOverride && locationOverride.trim() !== "") {
@@ -528,10 +528,10 @@ app.patch("/api/complaints/:id/status", async (req, res) => {
 });
 
 // AI analysis test router (interactive typing previews)
-app.post("/api/analyze-test", (req, res) => {
+app.post("/api/analyze-test", async (req, res) => {
   try {
     const { description } = req.body;
-    const analysis = analyzeDescription(description);
+    const analysis = await analyzeDescription(description);
     res.json(analysis);
   } catch (error) {
     res.status(500).json({ error: "Failed to run analysis." });

@@ -1,113 +1,40 @@
-/**
- * NLP Processor for Delhi Civic Service Navigator
- * Extracts category, department, severity, location, title, and summary from descriptions.
- */
+import 'dotenv/config';
 
-const CATEGORIES = [
-  "Road Damage",
-  "Garbage Collection",
-  "Water Supply",
-  "Water Leakage",
-  "Sewage Problems",
-  "Street Lights",
-  "Electricity",
-  "Public Transport",
-  "Traffic Signals",
-  "Illegal Parking",
-  "Encroachment",
-  "Air Pollution",
-  "Tree Fallen",
-  "Drainage",
-  "Public Toilets",
-  "Others"
+// Constants from functiondisc/ai.py
+const DEPARTMENTS = [
+    "PWD", "MCD", "DJB", "DTL / DISCOM", "Edistrict Delhi",
+    "DTC", "Delhi Police", "Delhi Traffic Police", "DPCC", "Delhi Civic helpline",
 ];
 
-// Mapping of categories to Delhi government departments
-const DEPARTMENT_MAPPING = {
-  "Road Damage": "PWD (Public Works Department)",
-  "Garbage Collection": "MCD (Municipal Corporation of Delhi)",
-  "Water Supply": "DJB (Delhi Jal Board)",
-  "Water Leakage": "DJB (Delhi Jal Board)",
-  "Sewage Problems": "DJB (Delhi Jal Board)",
-  "Street Lights": "MCD (Municipal Corporation of Delhi)",
-  "Electricity": "DTL / DISCOM (Tata Power/BSES)",
-  "Public Transport": "DTC (Delhi Transport Corporation)",
-  "Traffic Signals": "Delhi Traffic Police",
-  "Illegal Parking": "Delhi Traffic Police / MCD",
-  "Encroachment": "MCD (Municipal Corporation of Delhi)",
-  "Air Pollution": "DPCC (Delhi Pollution Control Committee)",
-  "Tree Fallen": "MCD (Horticulture Department)",
-  "Drainage": "PWD (Public Works Department)",
-  "Public Toilets": "MCD (Municipal Corporation of Delhi)",
-  "Others": "Delhi Civic helpline"
-};
+const SEVERITY_LEVELS = ["High", "Medium", "Low"];
 
-// Keyword mapping for categories
-const CATEGORY_KEYWORDS = {
-  "Road Damage": ["pothole", "crater", "broken road", "damaged road", "road damage", "crack", "tar", "asphalt", "flyover crack"],
-  "Garbage Collection": ["garbage", "trash", "rubbish", "dump", "waste", "litter", "dustbin", "pile of plastic", "filth", "cleanliness"],
-  "Water Supply": ["no water", "low water pressure", "dirty water", "muddy water", "water supply", "drinking water", "scarcity"],
-  "Water Leakage": ["leakage", "water leak", "pipe burst", "flowing water", "pipe leak", "water wasting", "broken pipe"],
-  "Sewage Problems": ["sewage", "sewer", "manhole", "gutter", "drainage block", "smell", "foul water", "stink"],
-  "Street Lights": ["street light", "streetlight", "dark street", "no light", "bulb broken", "lamp post", "lights not working"],
-  "Electricity": ["electricity", "power cut", "voltage", "sparks", "loose wire", "transformer", "electric pole", "current", "short circuit"],
-  "Public Transport": ["dtc bus", "metro delay", "metro service", "bus frequency", "metro line fault", "metro train", "transit delay", "metro coach", "bus route", "commuter bus", "metro token"],
-  "Traffic Signals": ["traffic signal", "traffic light", "red light", "blinker", "zebra crossing", "signal not working", "timer broken"],
-  "Illegal Parking": ["illegal parking", "parked car", "blocking road", "no parking zone", "wrong parking", "vehicle block"],
-  "Encroachment": ["encroachment", "hawker", "vendors", "footpath block", "illegal shop", " कब्जा", "street vendor blocking"],
-  "Air Pollution": ["pollution", "smoke", "smog", "dust", "burning waste", "toxic air", "breathing", "aqi", "bad air quality"],
-  "Tree Fallen": ["tree fell", "fallen tree", "branch", "blocked by tree", "tree broken", "uprooted tree"],
-  "Drainage": ["drain", "water logging", "waterlogged", "flooded road", "clogged drain", "drainage overflow"],
-  "Public Toilets": ["toilet", "public toilet", "urinal", "sulabh", "washroom", "dirty toilet", "no water in toilet"],
-};
-
-// Words that indicate high severity and safety issues
-const SEVERITY_KEYWORDS = {
-  "Critical": ["sparks", "fire", "live wire", "electrocution", "current flowing", "short circuit", "open transformer", "cave in", "sinkhole", "toxic gas", "open manhole", "chemical leak"],
-  "High": ["accident", "collision", "danger", "injured", "hazard", "blocking traffic", "jam", "huge pothole", "broken leg", "elderly fell", "slipped", "major leak", "darkness", "cannot breathe"],
-  "Medium": ["overflowing", "stinking", "broken", "dirty", "smelly", "not working", "inconvenience", "pile of", "frequent"]
-};
-
-/**
- * Extract location from text using common prepositions
- */
-function extractLocation(text) {
-  // Pattern to look for prepositions followed by a few words (landmarks, street names, etc.)
-  // Handles English patterns
-  const match = text.match(/(?:near|at|on|opposite|outside|in front of|beside|behind|in)\s+([A-Za-z0-9\s,\-]+(?:\b(?:Metro|Gate|Chowk|Market|Road|Street|Block|Phase|Extension|Sector|Vihar|Nagar|Enclave|Flyover|Park|Red Light|School|Hospital|Mandir|Gurudwara|Masjid|Church)\b)?[A-Za-z0-9\s,\-]*?)(?=\s+(?:is|causes|blocking|causing|due|and|with|there|\.|\,|$))/i);
-  
-  if (match && match[1]) {
-    let loc = match[1].trim();
-    // Clean up trailing prepositions or verbs
-    loc = loc.replace(/\s+(is|was|causing|causes|blocking|has|and)\b.*$/i, "");
-    if (loc.length > 5 && loc.length < 100) {
-      return loc;
-    }
-  }
-  
-  // Fallback: look for common Delhi places in text
-  const commonDelhiPlaces = [
-    "Rajiv Chowk", "Connaught Place", "CP", "Dwarka", "Saket", "Noida", "Gurugram", 
-    "Rohini", "Janakpuri", "Karol Bagh", "Lajpat Nagar", "Chandni Chowk", "Okhla", 
-    "Vasant Kunj", "Munirka", "Hauz Khas", "Nehru Place", "Mayur Vihar", "Shahdara", 
-    "Uttam Nagar", "Preet Vihar", "Paschim Vihar", "Pari Chowk", "Kashmere Gate"
-  ];
-  
-  for (const place of commonDelhiPlaces) {
-    if (new RegExp("\\b" + place + "\\b", "i").test(text)) {
-      return place;
-    }
-  }
-  
-  return null;
-}
+const DELHI_PLACES = [
+    "Anand Vihar", "Ashok Vihar", "Babarpur", "Badarpur", "Bawana", "Bhajanpura",
+    "Bijwasan", "Chanakyapuri", "Chandni Chowk", "Chhatarpur", "Civil Lines",
+    "Connaught Place", "Daryaganj", "Defense Colony", "Delhi Cantonment",
+    "Dilshad Garden", "Dwarka", "Geeta Colony", "Gokulpuri", "Gole Market",
+    "Govindpuri", "Greater Kailash", "Green Park", "GTB Nagar", "Hari Nagar",
+    "Hauz Khas", "ITO", "Jamia Nagar", "Janakpuri", "Jor Bagh", "Kalkaji",
+    "Kamla Nagar", "Kapashera", "Karol Bagh", "Kashmere Gate", "Kirti Nagar",
+    "Kotwali", "Lajpat Nagar", "Laxmi Nagar", "Lodhi Colony", "Mahipalpur",
+    "Malviya Nagar", "Mangolpuri", "Mayur Vihar", "Mehrauli", "Model Town",
+    "Moti Nagar", "Mukherjee Nagar", "Munirka", "Najafgarh", "Nand Nagri",
+    "Narela", "Nehru Place", "New Friends Colony", "Nizamuddin", "Okhla",
+    "Paharganj", "Palam", "Pandav Nagar", "Paschim Vihar", "Patel Nagar",
+    "Patparganj", "Pitampura", "Pragati Maidan", "Preet Vihar", "Punjabi Bagh",
+    "R.K. Puram", "Rajendra Nagar", "Rajouri Garden", "Rohini", "Sadar Bazaar",
+    "Safdarjung Enclave", "Saket", "Saraswati Vihar", "Sarita Vihar", "Seelampur",
+    "Seemapuri", "Shahdara", "Shalimar Bagh", "Shastri Park", "South Extension",
+    "Sultanpuri", "Tilak Nagar", "Timarpur", "Uttam Nagar", "Vasant Kunj",
+    "Vasant Vihar", "Vasundhara Enclave", "Vikaspuri", "Vivek Vihar", "Yamuna Vihar"
+];
 
 /**
  * Main process function
  * @param {string} description 
  * @returns {object} Structured AI analysis
  */
-export function analyzeDescription(description) {
+export async function analyzeDescription(description) {
   if (!description || typeof description !== "string") {
     return {
       category: "Others",
@@ -120,128 +47,94 @@ export function analyzeDescription(description) {
     };
   }
 
-  const text = description.toLowerCase();
+  const system_prompt = `
+    You are an intelligent civic issue router for Delhi. Analyze the input.
+    
+    1. CATEGORY: Map the issue to EXACTLY ONE department: ${JSON.stringify(DEPARTMENTS)}
+    2. SEVERITY: Assign severity based on safety risks: ${JSON.stringify(SEVERITY_LEVELS)}
+    3. LOCATION: Extract the location mentioned in the input and match it to one of these places: ${JSON.stringify(DELHI_PLACES)}. 
+       IMPORTANT: If the location does not exactly match the list, extract the specific street, road, landmark, or local area mentioned in the text (e.g., "Outer Ring Road"). 
+       If absolutely no location or landmark is mentioned, use null.
+    4. DESCRIPTION: Create a concise, 1-sentence summary of the problem.
 
-  // 1. Categorization
-  let categoryScores = {};
-  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    categoryScores[cat] = 0;
-    for (const keyword of keywords) {
-      const regex = new RegExp("\\b" + keyword.replace(" ", "\\s+") + "\\b", "gi");
-      const matches = text.match(regex);
-      if (matches) {
-        categoryScores[cat] += matches.length * 2; // Match counts
-      }
+    Output ONLY a valid JSON object with these exact keys, no markdown, no extra text:
+    {
+        "Description": "Concise summary",
+        "Severity": "High/Medium/Low",
+        "Department": "Matched Department",
+        "Location": "Matched Location, Extracted Landmark, or null"
     }
-  }
+    `;
 
-  // Find max category score
-  let detectedCategory = "Others";
-  let maxScore = 0;
-  for (const [cat, score] of Object.entries(categoryScores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      detectedCategory = cat;
+  try {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      console.warn("Missing OPENROUTER_API_KEY. Using fallback categorizer.");
+      return fallbackCategorize(description);
     }
-  }
 
-  // If no keywords matched, default to Others or do a simple substring fallback
-  if (maxScore === 0) {
-    for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-      for (const keyword of keywords) {
-        if (text.includes(keyword)) {
-          detectedCategory = cat;
-          maxScore = 1;
-          break;
-        }
-      }
-      if (maxScore > 0) break;
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-20b",
+        messages: [
+          { role: "system", content: system_prompt },
+          { role: "user", content: description }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.statusText}`);
     }
-  }
 
-  // 2. Department Mapping
-  const department = DEPARTMENT_MAPPING[detectedCategory] || "Delhi Civic helpline";
-
-  // 3. Severity Analysis
-  let severity = "Low";
-  let severityScore = 0;
-
-  for (const keyword of SEVERITY_KEYWORDS.Critical) {
-    if (text.includes(keyword)) {
-      severity = "Critical";
-      severityScore = 3;
-      break;
-    }
-  }
-
-  if (severityScore < 3) {
-    for (const keyword of SEVERITY_KEYWORDS.High) {
-      if (text.includes(keyword)) {
-        severity = "High";
-        severityScore = 2;
-        break;
-      }
-    }
-  }
-
-  if (severityScore < 2) {
-    for (const keyword of SEVERITY_KEYWORDS.Medium) {
-      if (text.includes(keyword)) {
-        severity = "Medium";
-        severityScore = 1;
-        break;
-      }
-    }
-  }
-
-  // 4. Location Extraction
-  const location = extractLocation(description);
-
-  // 5. Title Generation
-  let title = "";
-  const cleanedDesc = description.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
-  const words = cleanedDesc.split(/\s+/);
-  
-  if (location) {
-    title = `${detectedCategory} at ${location}`;
-  } else if (words.length > 5) {
-    title = words.slice(0, 5).join(" ") + "...";
-    // Capitalize first letter of each word
-    title = title.replace(/\b\w/g, c => c.toUpperCase());
-  } else {
-    title = `${detectedCategory} Issue`;
-  }
-
-  // 6. Summary Generation
-  let summary = "";
-  if (words.length <= 10) {
-    summary = description;
-  } else {
-    // Generate clean description-based summary
-    let firstSentence = description.split(/[.!?]/)[0].trim();
-    if (firstSentence.length < 20) {
-      firstSentence = words.slice(0, 12).join(" ") + "...";
+    const data = await response.json();
+    let resultText = data.choices[0].message.content.trim();
+    
+    // Sometimes models wrap json in markdown block, remove it just in case
+    if (resultText.startsWith("\`\`\`json")) {
+        resultText = resultText.replace(/^\`\`\`json\n/, "").replace(/\n\`\`\`$/, "");
+    } else if (resultText.startsWith("\`\`\`")) {
+        resultText = resultText.replace(/^\`\`\`\n/, "").replace(/\n\`\`\`$/, "");
     }
     
-    // Enrich based on severity & category
-    const severityActionText = 
-      severity === "Critical" ? "requires immediate emergency response" :
-      severity === "High" ? "requires urgent inspection" :
-      severity === "Medium" ? "needs prompt attention" : "needs routine maintenance";
+    const parsed = JSON.parse(resultText);
 
-    summary = `${firstSentence}. This is classified as a ${detectedCategory} issue under ${department} and ${severityActionText}.`;
+    const desc = parsed.Description || "Unknown issue";
+    const loc = parsed.Location && parsed.Location !== "null" ? parsed.Location : null;
+    
+    const words = desc.split(/\\s+/);
+    let title = words.slice(0, 5).join(" ");
+    if (words.length > 5) title += "...";
+    
+    return {
+      category: parsed.Department || "Others",
+      department: parsed.Department || "Delhi Civic helpline",
+      severity: parsed.Severity || "Low",
+      title: title,
+      summary: desc,
+      location: loc,
+      confidence: 0.95
+    };
+  } catch (error) {
+    console.error("Failed to analyze description via OpenRouter:", error);
+    return fallbackCategorize(description);
   }
+}
 
-  // Calculate confidence score
-  const confidence = maxScore > 0 ? Math.min(0.7 + (maxScore * 0.05), 0.98) : 0.65;
-
+function fallbackCategorize(description) {
+  // Simple fallback logic if AI API fails
   return {
-    category: detectedCategory,
-    department: department,
-    severity: severity,
-    title: title,
-    summary: summary,
-    location: location || "Delhi (General Location)",
-    confidence: parseFloat(confidence.toFixed(2))
+    category: "Others",
+    department: "Delhi Civic helpline",
+    severity: "Medium",
+    title: "Complaint Issue",
+    summary: description.substring(0, 50) + "...",
+    location: null,
+    confidence: 0.5
   };
 }

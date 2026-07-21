@@ -1,16 +1,16 @@
 import mongoose from "mongoose";
 
 const reportSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", null: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   userName: { type: String, default: "Anonymous" },
   userPhone: { type: String, default: "Not provided" },
   description: { type: String, required: true },
-  image: { type: String, default: null }, // Cloudinary URL or local filename fallback
+  image: { type: String, default: null },
   createdAt: { type: Date, default: Date.now }
 });
 
 const commentSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", null: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   userName: { type: String, required: true },
   commentText: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
@@ -33,16 +33,17 @@ const complaintSchema = new mongoose.Schema({
     lng: { type: Number, required: true }
   },
   description: { type: String, required: true },
-  status: { type: String, enum: ["Pending", "In Progress", "Resolved"], default: "Pending" },
+  status: { type: String, enum: ["Pending", "In Progress", "Resolved", "Rejected"], default: "Pending" },
+  assignedTo: { type: String, default: null },
   priority: { type: Number, default: 15 },
   priorityLevel: { type: String, enum: ["Low", "Medium", "High", "Critical"], default: "Low" },
   reportCount: { type: Number, default: 1 },
-  images: [{ type: String }], // Cloudinary URLs or local filenames
+  images: [{ type: String }],
   history: [historySchema],
   reports: [reportSchema],
-  comments: [commentSchema], // Support community discussion comments
+  comments: [commentSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
 
-export const Complaint = mongoose.model("Complaint", complaintSchema);
+export const Complaint = mongoose.models.Complaint || mongoose.model("Complaint", complaintSchema);

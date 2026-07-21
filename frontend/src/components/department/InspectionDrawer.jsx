@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { StatusBadge, PriorityBadge } from "../common/Badge";
+import { StatusBadge, PriorityBadge, SeverityBadge } from "../common/Badge";
 import { resolveImageUrl, formatDateTime } from "../../utils/formatters";
-import { updateComplaintStatus } from "../../services/api";
+import { useComplaints } from "../../hooks/useComplaints";
+import { useAuth } from "../../hooks/useAuth";
 
-export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, onComplaintUpdated, onImageClick }) {
+export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, onImageClick }) {
   const [status, setStatus] = useState("Pending");
   const [note, setNote] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const { token, isDepartmentUser } = useAuth();
+  const { updateStatus } = useComplaints();
 
   useEffect(() => {
     if (selectedComplaint) {
       setStatus(selectedComplaint.status || "Pending");
       setNote("");
+      setErrorMsg("");
     }
   }, [selectedComplaint]);
 
-  // Mini Leaflet Map inside drawer
+  // Drawer Mini Map
   useEffect(() => {
     if (!selectedComplaint || !selectedComplaint.locationCoords) return;
 
@@ -56,16 +62,20 @@ export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, on
 
   const handleStatusSubmit = async (e) => {
     e.preventDefault();
+    if (!isDepartmentUser) {
+      setErrorMsg("Access denied. Only authenticated department officials can change complaint status.");
+      return;
+    }
+
     setUpdating(true);
+    setErrorMsg("");
 
     try {
       const compId = selectedComplaint._id || selectedComplaint.id;
-      const res = await updateComplaintStatus(compId, status, note);
-      if (onComplaintUpdated) {
-        onComplaintUpdated(res.complaint);
-      }
+      await updateStatus(compId, status, note, token);
+      onClose();
     } catch (err) {
-      alert(err.message || "Failed to update status.");
+      setErrorMsg(err.message || "Failed to update status.");
     } finally {
       setUpdating(false);
     }
@@ -93,9 +103,10 @@ export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, on
           <h2 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-primary)", marginBottom: "8px" }}>
             {selectedComplaint.title || selectedComplaint.description}
           </h2>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
             <StatusBadge status={selectedComplaint.status} />
             <PriorityBadge priorityLevel={selectedComplaint.priorityLevel} score={selectedComplaint.priority} />
+            <SeverityBadge severity={selectedComplaint.severity} />
           </div>
         </div>
 
@@ -110,7 +121,7 @@ export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, on
           </div>
         )}
 
-        {/* AI Structured Summary */}
+        {/* AI Summary */}
         <div>
           <h4 className="drawer-section-title">AI Processing Summary</h4>
           <div className="ai-report-box">
@@ -124,7 +135,7 @@ export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, on
                 <span className="ai-meta-val">{selectedComplaint.department}</span>
               </div>
               <div className="ai-meta-item">
-                <span className="ai-meta-label">Severity level</span>
+                <span className="ai-meta-label">Severity Level</span>
                 <span className="ai-meta-val">{selectedComplaint.severity}</span>
               </div>
               <div className="ai-meta-item">
@@ -155,7 +166,7 @@ export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, on
           </div>
         )}
 
-        {/* Consolidated Reports Feed */}
+        {/* Consolidated Reports */}
         <div>
           <h4 className="drawer-section-title">Consolidated Citizen Reports ({drawerReports.length || selectedComplaint.reportCount})</h4>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -177,7 +188,7 @@ export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, on
           </div>
         </div>
 
-        {/* Timeline Log */}
+        {/* Action History Log */}
         <div>
           <h4 className="drawer-section-title">Action Audit Timeline</h4>
           <div className="history-timeline">
@@ -192,33 +203,44 @@ export function InspectionDrawer({ selectedComplaint, drawerReports, onClose, on
           </div>
         </div>
 
-        {/* Administrative Update Status Form */}
+        {/* Administrative Action Status Form */}
         <div style={{ borderTop: "1px solid var(--border-glass)", paddingTop: "16px" }}>
-          <h4 className="drawer-section-title">Update Status Action</h4>
-          <form onSubmit={handleStatusSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label>Select Status</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
-              </select>
+          <h4 className="drawer-section-title">Administrative Actions</h4>
+          {!isDepartmentUser ? (
+            <div style={{ background: "#fef3c7", color: "#b45309", padding: "12px", borderRadius: "10px", fontSize: "12px" }}>
+              🔒 Restricted to authenticated Department/Admin officials. Citizens cannot alter complaint status.
             </div>
+          ) : (
+            <form onSubmit={handleStatusSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label>Select Status Action *</label>
+                <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="Pending">Pending (Unassigned / Queued)</option>
+                  <option value="In Progress">In Progress (Crew Dispatched)</option>
+                  <option value="Resolved">Resolved (Issue Fixed)</option>
+                  <option value="Rejected">Rejected (Out of Scope / Invalid)</option>
+                </select>
+              </div>
 
-            <div className="form-group" style={{ margin: 0 }}>
-              <label>Resolution Note / Audit Remark</label>
-              <input
-                type="text"
-                placeholder="e.g. MCD Repair Crew dispatched to site"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label>Resolution Remark / Audit Note</label>
+                <input
+                  type="text"
+                  placeholder="e.g. MCD Pothole Repair Crew dispatched to site"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
 
-            <button type="submit" className="btn-primary" disabled={updating}>
-              {updating ? "Saving Status..." : "Update Complaint Status"}
-            </button>
-          </form>
+              {errorMsg && (
+                <p style={{ color: "var(--metro-red)", fontSize: "13px", margin: 0 }}>⚠️ {errorMsg}</p>
+              )}
+
+              <button type="submit" className="btn-primary" disabled={updating}>
+                {updating ? "Updating Status..." : "⚡ Update Complaint Status"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

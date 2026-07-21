@@ -1,6 +1,5 @@
 import { API_URL } from "../constants/config";
 
-// Helper for making API requests
 async function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
   const response = await fetch(url, options);
@@ -39,6 +38,14 @@ export async function loginUser({ phone, password }) {
   });
 }
 
+export async function loginDepartmentApi({ department, password }) {
+  return request("/auth/department-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ department, password })
+  });
+}
+
 // Complaints Services
 export async function fetchComplaints() {
   return request("/complaints");
@@ -67,10 +74,15 @@ export async function submitComplaint(formData, token) {
   });
 }
 
-export async function updateComplaintStatus(complaintId, status, note) {
+export async function updateComplaintStatus(complaintId, status, note, token) {
+  const headers = { "Content-Type": "application/json" };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   return request(`/complaints/${complaintId}/status`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ status, note })
   });
 }
@@ -106,6 +118,10 @@ export async function postComment(complaintId, commentText, token) {
 
 export async function fetchNearbyComplaints(lat, lng, radius = 1.5) {
   return request(`/complaints/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
+}
+
+export async function fetchAnalytics() {
+  return request("/analytics");
 }
 
 export async function analyzeDescriptionTest(description) {

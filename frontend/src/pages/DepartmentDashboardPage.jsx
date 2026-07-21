@@ -1,29 +1,31 @@
 import React from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useComplaints } from "../hooks/useComplaints";
+import { DepartmentAuth } from "../components/department/DepartmentAuth";
 import { DepartmentDashboard } from "../components/department/DepartmentDashboard";
 
-export function DepartmentDashboardPage({
-  complaints,
-  loading,
-  selectedDept,
-  setSelectedDept,
-  selectedComplaint,
-  drawerReports,
-  onOpenDrawer,
-  onCloseDrawer,
-  onComplaintUpdated,
-  onImageClick
-}) {
+export function DepartmentDashboardPage({ onImageClick }) {
+  const { isDepartmentUser, loginDepartment } = useAuth();
+  const complaintsState = useComplaints();
+
+  if (!isDepartmentUser) {
+    return <DepartmentAuth onLogin={loginDepartment} />;
+  }
+
   return (
     <DepartmentDashboard
-      complaints={complaints}
-      loading={loading}
-      selectedDept={selectedDept}
-      setSelectedDept={setSelectedDept}
-      selectedComplaint={selectedComplaint}
-      drawerReports={drawerReports}
-      onOpenDrawer={onOpenDrawer}
-      onCloseDrawer={onCloseDrawer}
-      onComplaintUpdated={onComplaintUpdated}
+      complaints={complaintsState.complaints}
+      loading={complaintsState.loading}
+      selectedDept={complaintsState.selectedDept}
+      setSelectedDept={complaintsState.setSelectedDept}
+      selectedComplaint={complaintsState.selectedComplaint}
+      drawerReports={complaintsState.drawerReports}
+      onOpenDrawer={complaintsState.openDrawer}
+      onCloseDrawer={complaintsState.closeDrawer}
+      onComplaintUpdated={() => {
+        complaintsState.loadComplaints();
+        complaintsState.closeDrawer();
+      }}
       onImageClick={onImageClick}
     />
   );

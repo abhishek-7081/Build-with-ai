@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { analyzeDescriptionTest, submitComplaint } from "../../services/api";
 
-export function ComplaintForm({ token, user, onComplaintSubmitted }) {
+export function ComplaintForm({ token, user, initialCoords, onCoordsChange, onComplaintSubmitted }) {
   const [description, setDescription] = useState("");
   const [locationOverride, setLocationOverride] = useState("");
-  const [latitude, setLatitude] = useState(28.6139);
-  const [longitude, setLongitude] = useState(77.2090);
+  const [latitude, setLatitude] = useState(initialCoords?.lat || 28.6139);
+  const [longitude, setLongitude] = useState(initialCoords?.lng || 77.2090);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [aiSuggestion, setAiSuggestion] = useState(null);
@@ -15,7 +15,14 @@ export function ComplaintForm({ token, user, onComplaintSubmitted }) {
 
   const pickerMarkerRef = useRef(null);
 
-  // Dynamic AI live analysis typing debounce
+  useEffect(() => {
+    if (initialCoords && initialCoords.lat && initialCoords.lng) {
+      setLatitude(initialCoords.lat);
+      setLongitude(initialCoords.lng);
+    }
+  }, [initialCoords]);
+
+  // Dynamic AI analysis preview
   useEffect(() => {
     if (description.trim().length < 15) {
       setAiSuggestion(null);
@@ -64,16 +71,20 @@ export function ComplaintForm({ token, user, onComplaintSubmitted }) {
         const marker = window.L.marker([latitude, longitude], { draggable: true }).addTo(map);
         pickerMarkerRef.current = marker;
 
+        const updateCoords = (newLat, newLng) => {
+          setLatitude(newLat);
+          setLongitude(newLng);
+          if (onCoordsChange) onCoordsChange({ lat: newLat, lng: newLng });
+        };
+
         marker.on("dragend", () => {
           const pos = marker.getLatLng();
-          setLatitude(parseFloat(pos.lat.toFixed(6)));
-          setLongitude(parseFloat(pos.lng.toFixed(6)));
+          updateCoords(parseFloat(pos.lat.toFixed(6)), parseFloat(pos.lng.toFixed(6)));
         });
 
         map.on("click", (e) => {
           marker.setLatLng(e.latlng);
-          setLatitude(parseFloat(e.latlng.lat.toFixed(6)));
-          setLongitude(parseFloat(e.latlng.lng.toFixed(6)));
+          updateCoords(parseFloat(e.latlng.lat.toFixed(6)), parseFloat(e.latlng.lng.toFixed(6)));
         });
       } catch (err) {
         console.error("Leaflet picker map creation error:", err);
@@ -81,21 +92,21 @@ export function ComplaintForm({ token, user, onComplaintSubmitted }) {
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [submitResult, latitude, longitude]);
+  }, [submitResult, latitude, longitude, onCoordsChange]);
 
-  // Handle GPS location detection
-  const handleGPSLocation = () => {
+  const handleGPSDetect = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = parseFloat(position.coords.latitude.toFixed(6));
-        const lng = parseFloat(position.coords.longitude.toFixed(6));
+      (pos) => {
+        const lat = parseFloat(pos.coords.latitude.toFixed(6));
+        const lng = parseFloat(pos.coords.longitude.toFixed(6));
         setLatitude(lat);
         setLongitude(lng);
+        if (onCoordsChange) onCoordsChange({ lat, lng });
 
         if (window.pickerMap && pickerMarkerRef.current) {
           window.pickerMap.setView([lat, lng], 14);
@@ -108,7 +119,6 @@ export function ComplaintForm({ token, user, onComplaintSubmitted }) {
     );
   };
 
-  // Image upload handling
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -255,7 +265,7 @@ export function ComplaintForm({ token, user, onComplaintSubmitted }) {
             <button
               type="button"
               className="btn-outline"
-              onClick={handleGPSLocation}
+              onClick={handleGPSDetect}
               style={{ padding: "4px 12px", fontSize: "12px" }}
             >
               📍 GPS My Location

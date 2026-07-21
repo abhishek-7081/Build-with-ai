@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useComplaints } from "../hooks/useComplaints";
+import { useGeolocation } from "../hooks/useGeolocation";
 import { CitizenAuth } from "../components/citizen/CitizenAuth";
 import { ComplaintForm } from "../components/citizen/ComplaintForm";
 import { MyComplaintsList } from "../components/citizen/MyComplaintsList";
 import { NearbyComplaints } from "../components/citizen/NearbyComplaints";
 import { fetchMyComplaints, fetchNearbyComplaints } from "../services/api";
 
-export function CitizenPortalPage({ auth, complaints, onUpdateComplaints, onImageClick }) {
+export function CitizenPortalPage({ onImageClick }) {
+  const { user, token, authMode, setAuthMode, authName, setAuthName, authPhone, setAuthPhone, authPassword, setAuthPassword, authError, authLoading, loginCitizen, signupCitizen } = useAuth();
+  const { complaints, loadComplaints } = useComplaints();
+  const { coords, setCoords, detectLocation } = useGeolocation();
+
   const [subView, setSubView] = useState("report"); // report, list
   const [myComplaints, setMyComplaints] = useState([]);
   const [loadingMy, setLoadingMy] = useState(false);
@@ -13,74 +20,75 @@ export function CitizenPortalPage({ auth, complaints, onUpdateComplaints, onImag
   const [loadingNearby, setLoadingNearby] = useState(false);
 
   // Load citizen's personal complaints feed
-  const loadMyComplaints = async () => {
-    if (!auth.token) return;
+  const loadMyFeed = async () => {
+    if (!token) return;
     setLoadingMy(true);
     try {
-      const data = await fetchMyComplaints(auth.token);
+      const data = await fetchMyComplaints(token);
       setMyComplaints(data || []);
     } catch (err) {
-      console.warn("Failed to load citizen issues:", err);
+      console.warn("Failed to load citizen issues:", err.message);
     } finally {
       setLoadingMy(false);
     }
   };
 
   useEffect(() => {
-    if (auth.user && auth.token) {
-      loadMyComplaints();
+    if (user && token) {
+      loadMyFeed();
     }
-  }, [auth.user, auth.token, complaints]);
+  }, [user, token, complaints]);
 
-  // Load nearby complaints around center coords (28.6139, 77.2090)
+  // Dynamically load nearby complaints as soon as GPS coords update
   useEffect(() => {
     const loadNearby = async () => {
       setLoadingNearby(true);
       try {
-        const data = await fetchNearbyComplaints(28.6139, 77.2090, 1.5);
+        const data = await fetchNearbyComplaints(coords.lat, coords.lng, 1.5);
         setNearbyComplaints(data || []);
       } catch (err) {
-        console.warn("Failed to load nearby complaints:", err);
+        console.warn("Failed to load nearby complaints:", err.message);
       } finally {
         setLoadingNearby(false);
       }
     };
-    loadNearby();
-  }, [complaints]);
 
-  if (!auth.user) {
+    loadNearby();
+  }, [coords, complaints]);
+
+  if (!user) {
     return (
       <CitizenAuth
-        authMode={auth.authMode}
-        setAuthMode={auth.setAuthMode}
-        authName={auth.authName}
-        setAuthName={auth.setAuthName}
-        authPhone={auth.authPhone}
-        setAuthPhone={auth.setAuthPhone}
-        authPassword={auth.authPassword}
-        setAuthPassword={auth.setAuthPassword}
-        authError={auth.authError}
-        authLoading={auth.authLoading}
-        onLogin={auth.login}
-        onSignup={auth.signup}
+        authMode={authMode || "login"}
+        setAuthMode={setAuthMode}
+        authName={authName}
+        setAuthName={setAuthName}
+        authPhone={authPhone}
+        setAuthPhone={setAuthPhone}
+        authPassword={authPassword}
+        setAuthPassword={setAuthPassword}
+        authError={authError}
+        authLoading={authLoading}
+        onLogin={loginCitizen}
+        onSignup={signupCitizen}
       />
     );
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* Profile Bar / Navigation Header */}
+      {/* Profile Bar */}
       <div className="profile-bar">
         <div className="profile-avatar-group">
           <div className="profile-avatar">
-            {auth.user.name ? auth.user.name.charAt(0).toUpperCase() : "U"}
+            {user.name ? user.name.charAt(0).toUpperCase() : "U"}
           </div>
           <div>
             <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>
-              Connected Citizen: {auth.user.name}
+              Connected Citizen: {user.name}
             </strong>
             <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              📞 Phone ID: {auth.user.phone}
+              📞 Phone ID: {user.phone} &bull; 📍 GPS Coords: {coords.lat}, {coords.lng}
             </div>
           </div>
         </div>
@@ -97,7 +105,7 @@ export function CitizenPortalPage({ auth, complaints, onUpdateComplaints, onImag
             className={`btn-secondary ${subView === "list" ? "active" : ""}`}
             onClick={() => {
               setSubView("list");
-              loadMyComplaints();
+              loadMyFeed();
             }}
             style={{ fontSize: "13px", padding: "8px 16px" }}
           >
@@ -107,21 +115,20 @@ export function CitizenPortalPage({ auth, complaints, onUpdateComplaints, onImag
       </div>
 
       {subView === "report" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "24px" }}>
           <ComplaintForm
-            token={auth.token}
-            user={auth.user}
+            token={token}
+            user={user}
+            initialCoords={coords}
+            onCoordsChange={setCoords}
             onComplaintSubmitted={() => {
-              loadMyComplaints();
-              if (onUpdateComplaints) onUpdateComplaints();
+              loadMyFeed();
+              loadComplaints();
             }}
           />
           <NearbyComplaints
             nearbyComplaints={nearbyComplaints}
             loadingNearby={loadingNearby}
-            user={auth.user}
-            token={auth.token}
-            onUpdateComplaints={onUpdateComplaints}
             onImageClick={onImageClick}
           />
         </div>
